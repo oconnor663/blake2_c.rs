@@ -1,5 +1,6 @@
-extern crate libb2_sys;
+extern crate byteorder;
 extern crate clear_on_drop;
+extern crate libb2_sys;
 
 pub const BLOCKBYTES: usize = libb2_sys::BLAKE2B_BLOCKBYTES as usize;
 pub const OUTBYTES: usize = libb2_sys::BLAKE2B_OUTBYTES as usize;
@@ -32,6 +33,16 @@ impl Blake2bBuilder {
             key: [0; KEYBYTES],
             last_node: false,
         }
+    }
+
+    pub fn build(&self) -> Blake2bState {
+        let mut inner: libb2_sys::blake2b_state;
+        unsafe {
+            inner = std::mem::uninitialized();
+            libb2_sys::blake2b_init_param(&mut inner, &self.params);
+            // TODO: key block
+        }
+        Blake2bState { inner }
     }
 
     pub fn digest_length(&mut self, len: usize) {
@@ -81,7 +92,30 @@ impl Blake2bBuilder {
     }
 
     pub fn max_leaf_length(&mut self, len: u32) {
-        self.params.leaf_length = len;
+        // NOTE: Tricky endianness issues here. CPython gets this wrong.
+        // See https://github.com/BLAKE2/libb2/issues/12.
+        self.params.leaf_length = len.to_le();
+    }
+
+    pub fn node_offset(&mut self, offset: u64) {
+        // NOTE: Tricky endianness issues here. CPython gets this wrong.
+        // See https://github.com/BLAKE2/libb2/issues/12.
+        self.params.node_offset = offset.to_le();
+    }
+
+    pub fn node_depth(&mut self, depth: u8) {
+        self.params.node_depth = depth;
+    }
+
+    pub fn inner_length(&mut self, length: usize) {
+        if length > OUTBYTES {
+            panic!("Inner length must be at most {}.", OUTBYTES);
+        }
+        self.params.inner_length = length as u8;
+    }
+
+    pub fn last_node(&mut self, last: bool) {
+        self.last_node = last;
     }
 }
 
@@ -89,4 +123,8 @@ impl Drop for Blake2bBuilder {
     fn drop(&mut self) {
         clear_on_drop::clear::Clear::clear(&mut self.key[..]);
     }
+}
+
+pub struct Blake2bState {
+    inner: libb2_sys::blake2b_state,
 }
