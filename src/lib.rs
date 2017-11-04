@@ -1,9 +1,9 @@
 extern crate arrayvec;
 extern crate byteorder;
-extern crate hex;
+extern crate constant_time_eq;
 extern crate libb2_sys;
 
-use arrayvec::ArrayVec;
+use arrayvec::{ArrayVec, ArrayString};
 
 pub const BLOCKBYTES: usize = libb2_sys::BLAKE2B_BLOCKBYTES as usize;
 pub const OUTBYTES: usize = libb2_sys::BLAKE2B_OUTBYTES as usize;
@@ -173,40 +173,66 @@ impl Blake2bState {
     /// Return the finalized hash. `finalize` takes `&mut self` so that you can
     /// chain method calls together easily, but calling it more than once on
     /// the same instance will give you a garbage result.
-    // TODO: Return a wrapped type that can constant-time-eq and to_hex itself.
-    pub fn finalize(&mut self) -> ArrayVec<[u8; OUTBYTES]> {
-        let mut out = ArrayVec::new();
+    pub fn finalize(&mut self) -> Digest {
+        let mut bytes = ArrayVec::new();
         unsafe {
-            out.set_len(self.0.outlen as usize);
-            libb2_sys::blake2b_final(&mut self.0, out.as_mut_ptr(), out.len());
+            bytes.set_len(self.0.outlen as usize);
+            libb2_sys::blake2b_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
         }
-        out
+        Digest { bytes }
     }
 }
+
+/// Holds a Blake2 hash. Supports constant-time equality, for cases where
+/// Blake2 is being used as a MAC. Althought digest lengths can vary at
+/// runtime, this type uses a statically-allocated ArrayVec. It could support
+/// `no_std`, though that's not yet implemented.
+#[derive(Clone, Debug)]
+pub struct Digest {
+    pub bytes: ArrayVec<[u8; OUTBYTES]>,
+}
+
+impl Digest {
+    pub fn hex(&self) -> ArrayString<[u8; 2 * OUTBYTES]> {
+        use std::fmt::Write;
+        let mut hexdigest = ArrayString::new();
+        for &b in &self.bytes {
+            write!(&mut hexdigest, "{:02x}", b).expect("too many bytes");
+        }
+        hexdigest
+    }
+}
+
+impl PartialEq for Digest {
+    fn eq(&self, other: &Digest) -> bool {
+        constant_time_eq::constant_time_eq(&self.bytes, &other.bytes)
+    }
+}
+
+impl Eq for Digest {}
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use hex::ToHex;
 
     #[test]
     fn test_empty() {
-        let hash = Blake2bState::new(16).finalize().to_hex();
-        assert_eq!("cae66941d9efbd404e4d88758ea67670", hash);
+        let hash = Blake2bState::new(16).finalize().hex();
+        assert_eq!("cae66941d9efbd404e4d88758ea67670", &*hash);
 
         // Make sure the builder gives the same answer.
         let hash2 = Blake2bBuilder::new()
             .digest_length(16)
             .build()
             .finalize()
-            .to_hex();
-        assert_eq!("cae66941d9efbd404e4d88758ea67670", hash2);
+            .hex();
+        assert_eq!("cae66941d9efbd404e4d88758ea67670", &*hash2);
     }
 
     #[test]
     fn test_foo() {
-        let hash = Blake2bState::new(16).update(b"foo").finalize().to_hex();
-        assert_eq!("04136e24f85d470465c3db66e58ed56c", hash);
+        let hash = Blake2bState::new(16).update(b"foo").finalize().hex();
+        assert_eq!("04136e24f85d470465c3db66e58ed56c", &*hash);
 
         // Make sure feeding one byte at a time gives the same answer.
         let hash2 = Blake2bState::new(16)
@@ -214,8 +240,8 @@ mod test {
             .update(b"o")
             .update(b"o")
             .finalize()
-            .to_hex();
-        assert_eq!("04136e24f85d470465c3db66e58ed56c", hash2);
+            .hex();
+        assert_eq!("04136e24f85d470465c3db66e58ed56c", &*hash2);
     }
 
     #[test]
@@ -237,8 +263,8 @@ mod test {
             let hash = Blake2bState::new(answer.len() / 2)
                 .update(&input)
                 .finalize()
-                .to_hex();
-            assert_eq!(answer, hash);
+                .hex();
+            assert_eq!(answer, &*hash);
         }
     }
 
@@ -259,7 +285,7 @@ mod test {
             .build()
             .update(b"foo")
             .finalize()
-            .to_hex();
-        assert_eq!("8cf9408d6c57cb17802e24821631a881dc", hash);
+            .hex();
+        assert_eq!("8cf9408d6c57cb17802e24821631a881dc", &*hash);
     }
 }
