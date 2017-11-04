@@ -5,11 +5,13 @@ extern crate libb2_sys;
 macro_rules! blake2_impl {
     {
         $modname:ident,
-        $blockbytes:expr,
-        $outbytes:expr,
-        $keybytes:expr,
-        $saltbytes:expr,
-        $personalbytes:expr,
+        $blockbytes:path,
+        $outbytes:path,
+        $keybytes:path,
+        $saltbytes:path,
+        $personalbytes:path,
+        $paramtype:path,
+        $statetype:path,
     } => {
 pub mod $modname {
     use arrayvec::{ArrayVec, ArrayString};
@@ -25,7 +27,7 @@ pub mod $modname {
 
     // TODO: Clone, Debug
     pub struct Builder {
-        params: libb2_sys::blake2b_param,
+        params: $paramtype,
         key_block: [u8; BLOCKBYTES as usize],
         last_node: bool,
     }
@@ -33,7 +35,7 @@ pub mod $modname {
     impl Builder {
         pub fn new() -> Self {
             Self {
-                params: libb2_sys::blake2b_param {
+                params: $paramtype {
                     digest_length: OUTBYTES as u8,
                     key_length: 0,
                     fanout: 1,
@@ -158,7 +160,7 @@ pub mod $modname {
     }
 
     // TODO: Clone, Debug
-    pub struct State(libb2_sys::blake2b_state);
+    pub struct State($statetype);
 
     impl State {
         /// Create a new hash state with the given digest length. For all the other
@@ -232,6 +234,8 @@ blake2_impl!{
     libb2_sys::BLAKE2B_KEYBYTES,
     libb2_sys::BLAKE2B_SALTBYTES,
     libb2_sys::BLAKE2B_PERSONALBYTES,
+    libb2_sys::blake2b_param,
+    libb2_sys::blake2b_state,
 }
 
 #[cfg(test)]
