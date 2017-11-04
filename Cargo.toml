@@ -8,3 +8,4 @@ libb2-sys = { git = "https://github.com/cesarb/libb2-sys", rev = "1494601d5996dd
 arrayvec = "0.4.5"
 byteorder = "1.1.0"
 clear_on_drop = "0.2.2"
+hex = "0.2.0"

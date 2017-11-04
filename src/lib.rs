@@ -1,6 +1,7 @@
 extern crate arrayvec;
 extern crate byteorder;
 extern crate clear_on_drop;
+extern crate hex;
 extern crate libb2_sys;
 
 use arrayvec::ArrayVec;
@@ -165,5 +166,71 @@ impl Blake2bState {
             libb2_sys::blake2b_final(&mut self.0, out.as_mut_ptr(), out.len());
         }
         out
+    }
+}
+
+impl Default for Blake2bState {
+    fn default() -> Self {
+        Blake2bBuilder::new().build()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use hex::FromHex;
+
+    #[test]
+    fn test_empty() {
+        let hash = Blake2bState::default().finalize();
+        let expected: Vec<u8> = FromHex::from_hex(
+            "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce",
+        ).unwrap();
+        assert_eq!(&*hash, &*expected);
+    }
+
+    #[test]
+    fn test_foo() {
+        let mut state = Blake2bState::default();
+        state.update(b"foo");
+        let hash = state.finalize();
+        let expected: Vec<u8> = FromHex::from_hex(
+            "ca002330e69d3e6b84a46a56a6533fd79d51d97a3bb7cad6c2ff43b354185d6dc1e723fb3db4ae0737e120378424c714bb982d9dc5bbd7a0ab318240ddd18f8d",
+        ).unwrap();
+        assert_eq!(&*hash, &*expected);
+    }
+
+    #[test]
+    fn test_foo_letter_by_letter() {
+        let mut state = Blake2bState::default();
+        state.update(b"f");
+        state.update(b"o");
+        state.update(b"o");
+        let hash = state.finalize();
+        let expected: Vec<u8> = FromHex::from_hex(
+            "ca002330e69d3e6b84a46a56a6533fd79d51d97a3bb7cad6c2ff43b354185d6dc1e723fb3db4ae0737e120378424c714bb982d9dc5bbd7a0ab318240ddd18f8d",
+        ).unwrap();
+        assert_eq!(&*hash, &*expected);
+    }
+
+    #[test]
+    fn test_all_parameters() {
+        let mut state = Blake2bBuilder::new()
+            .digest_length(16)
+            .key(b"bar")
+            .salt(b"baz")
+            .personal(b"bing")
+            .fanout(2)
+            .max_depth(3)
+            .max_leaf_length(4)
+            .node_offset(5)
+            .node_depth(6)
+            .inner_hash_length(7)
+            .last_node(true)
+            .build();
+        state.update(b"foo");
+        let hash = state.finalize();
+        let expected: Vec<u8> = FromHex::from_hex("920568b0c5873b2f0ab67bedb6cf1b2b").unwrap();
+        assert_eq!(&*hash, &*expected);
     }
 }
