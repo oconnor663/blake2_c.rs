@@ -5,6 +5,8 @@ extern crate libb2_sys;
 
 use arrayvec::{ArrayVec, ArrayString};
 
+macro_rules! blake2_impl {
+    () => {
 pub const BLOCKBYTES: usize = libb2_sys::BLAKE2B_BLOCKBYTES as usize;
 pub const OUTBYTES: usize = libb2_sys::BLAKE2B_OUTBYTES as usize;
 pub const KEYBYTES: usize = libb2_sys::BLAKE2B_KEYBYTES as usize;
@@ -210,6 +212,10 @@ impl PartialEq for Digest {
 }
 
 impl Eq for Digest {}
+
+}} // end of blake2_impl!
+
+blake2_impl!{}
 
 #[cfg(test)]
 mod test {
