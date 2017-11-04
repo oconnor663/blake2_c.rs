@@ -1,6 +1,5 @@
 extern crate arrayvec;
 extern crate byteorder;
-extern crate clear_on_drop;
 extern crate hex;
 extern crate libb2_sys;
 
@@ -35,6 +34,10 @@ impl Blake2bBuilder {
                 salt: [0; 16],
                 personal: [0; 16],
             },
+            // We don't currently attempt to zero the key bytes on drop. The
+            // builder could get moved around in the stack in any case, and
+            // drop wouldn't clear old bytes after a move. Callers who care
+            // about this might want to look at clear_on_drop::clear_stack.
             key_block: [0; BLOCKBYTES],
             last_node: false,
         }
@@ -142,12 +145,6 @@ impl Blake2bBuilder {
     }
 }
 
-impl Drop for Blake2bBuilder {
-    fn drop(&mut self) {
-        clear_on_drop::clear::Clear::clear(&mut self.key_block[..]);
-    }
-}
-
 // TODO: Clone, Debug
 pub struct Blake2bState(libb2_sys::blake2b_state);
 
@@ -173,9 +170,9 @@ impl Blake2bState {
         self
     }
 
-    /// Return the bytes of the final hash. `finalize` takes `&mut self` for
-    /// convenience, but calling it more than once on the same instance is a
-    /// logic error.
+    /// Return the finalized hash. `finalize` takes `&mut self` so that you can
+    /// chain method calls together easily, but calling it more than once on
+    /// the same instance will give you a garbage result.
     // TODO: Return a wrapped type that can constant-time-eq and to_hex itself.
     pub fn finalize(&mut self) -> ArrayVec<[u8; OUTBYTES]> {
         let mut out = ArrayVec::new();

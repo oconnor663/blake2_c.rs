@@ -7,5 +7,4 @@ authors = ["Jack O'Connor <oconnor663@gmail.com>"]
 libb2-sys = { git = "https://github.com/cesarb/libb2-sys", rev = "1494601d5996ddd651535e1bcc33b2e63c0cabb2" }
 arrayvec = "0.4.5"
 byteorder = "1.1.0"
-clear_on_drop = "0.2.2"
 hex = "0.2.0"
