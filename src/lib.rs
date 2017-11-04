@@ -7,6 +7,18 @@ use std::mem;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 
+pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
+    blake2b::State::new(64).update(input).finalize()
+}
+
+pub fn blake2b_256(input: &[u8]) -> blake2b::Digest {
+    blake2b::State::new(32).update(input).finalize()
+}
+
+pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
+    blake2s::State::new(32).update(input).finalize()
+}
+
 pub mod blake2b {
     use super::*;
 
@@ -580,5 +592,21 @@ mod test {
             .finalize()
             .hex();
         assert_eq!("a6a418a8c97d2c7801b3c8c86aa243aa75", &*hash);
+    }
+
+    #[test]
+    fn test_one_off_functions() {
+        assert_eq!(
+            &*blake2b_512(b"abc").hex(),
+            "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923"
+        );
+        assert_eq!(
+            &*blake2b_256(b"abc").hex(),
+            "bddd813c634239723171ef3fee98579b94964e3bb1cb3e427262c8c068d52319"
+        );
+        assert_eq!(
+            &*blake2s_256(b"abc").hex(),
+            "508c5e8c327c14e2e1a72ba34eeb452f37458b209ed63a294d999b4c86675982"
+        );
     }
 }
