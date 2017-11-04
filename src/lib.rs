@@ -1,6 +1,9 @@
+extern crate arrayvec;
 extern crate byteorder;
 extern crate clear_on_drop;
 extern crate libb2_sys;
+
+use arrayvec::ArrayVec;
 
 pub const BLOCKBYTES: usize = libb2_sys::BLAKE2B_BLOCKBYTES as usize;
 pub const OUTBYTES: usize = libb2_sys::BLAKE2B_OUTBYTES as usize;
@@ -8,6 +11,7 @@ pub const KEYBYTES: usize = libb2_sys::BLAKE2B_KEYBYTES as usize;
 pub const SALTBYTES: usize = libb2_sys::BLAKE2B_SALTBYTES as usize;
 pub const PERSONALBYTES: usize = libb2_sys::BLAKE2B_PERSONALBYTES as usize;
 
+// TODO: Clone, Debug
 pub struct Blake2bBuilder {
     params: libb2_sys::blake2b_param,
     key_block: [u8; BLOCKBYTES as usize],
@@ -36,13 +40,18 @@ impl Blake2bBuilder {
     }
 
     pub fn build(&self) -> Blake2bState {
-        let mut inner: libb2_sys::blake2b_state;
+        let mut state;
         unsafe {
-            inner = std::mem::uninitialized();
-            libb2_sys::blake2b_init_param(&mut inner, &self.params);
-            // TODO: key block
+            state = Blake2bState(std::mem::zeroed());
+            libb2_sys::blake2b_init_param(&mut state.0, &self.params);
         }
-        Blake2bState { inner }
+        if self.last_node {
+            state.0.last_node = 1;
+        }
+        if self.params.key_length > 0 {
+            state.update(&self.key_block);
+        }
+        state
     }
 
     pub fn digest_length(&mut self, length: usize) -> &mut Self {
@@ -138,6 +147,23 @@ impl Drop for Blake2bBuilder {
     }
 }
 
-pub struct Blake2bState {
-    inner: libb2_sys::blake2b_state,
+// TODO: Clone, Debug
+pub struct Blake2bState(libb2_sys::blake2b_state);
+
+impl Blake2bState {
+    pub fn update(&mut self, input: &[u8]) -> &mut Self {
+        unsafe {
+            libb2_sys::blake2b_update(&mut self.0, input.as_ptr(), input.len());
+        }
+        self
+    }
+
+    pub fn finalize(mut self) -> ArrayVec<[u8; OUTBYTES]> {
+        let mut out = ArrayVec::new();
+        unsafe {
+            out.set_len(self.0.outlen as usize);
+            libb2_sys::blake2b_final(&mut self.0, out.as_mut_ptr(), out.len());
+        }
+        out
+    }
 }
