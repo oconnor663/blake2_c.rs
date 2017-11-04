@@ -152,6 +152,20 @@ impl Drop for Blake2bBuilder {
 pub struct Blake2bState(libb2_sys::blake2b_state);
 
 impl Blake2bState {
+    /// Create a new hash state with the given digest length. For all the other
+    /// Blake2 parameters, including keying, use a builder instead.
+    pub fn new(digest_length: usize) -> Self {
+        if digest_length == 0 || digest_length > OUTBYTES {
+            panic!("Bad digest length: {}", digest_length);
+        }
+        let mut state;
+        unsafe {
+            state = Blake2bState(std::mem::zeroed());
+            libb2_sys::blake2b_init(&mut state.0, digest_length);
+        }
+        state
+    }
+
     pub fn update(&mut self, input: &[u8]) -> &mut Self {
         unsafe {
             libb2_sys::blake2b_update(&mut self.0, input.as_ptr(), input.len());
@@ -159,7 +173,11 @@ impl Blake2bState {
         self
     }
 
-    pub fn finalize(mut self) -> ArrayVec<[u8; OUTBYTES]> {
+    /// Return the bytes of the final hash. `finalize` takes `&mut self` for
+    /// convenience, but calling it more than once on the same instance is a
+    /// logic error.
+    // TODO: Return a wrapped type that can constant-time-eq and to_hex itself.
+    pub fn finalize(&mut self) -> ArrayVec<[u8; OUTBYTES]> {
         let mut out = ArrayVec::new();
         unsafe {
             out.set_len(self.0.outlen as usize);
@@ -169,54 +187,68 @@ impl Blake2bState {
     }
 }
 
-impl Default for Blake2bState {
-    fn default() -> Self {
-        Blake2bBuilder::new().build()
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use hex::FromHex;
+    use hex::ToHex;
 
     #[test]
     fn test_empty() {
-        let hash = Blake2bState::default().finalize();
-        let expected: Vec<u8> = FromHex::from_hex(
-            "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce",
-        ).unwrap();
-        assert_eq!(&*hash, &*expected);
+        let hash = Blake2bState::new(16).finalize().to_hex();
+        assert_eq!("cae66941d9efbd404e4d88758ea67670", hash);
+
+        // Make sure the builder gives the same answer.
+        let hash2 = Blake2bBuilder::new()
+            .digest_length(16)
+            .build()
+            .finalize()
+            .to_hex();
+        assert_eq!("cae66941d9efbd404e4d88758ea67670", hash2);
     }
 
     #[test]
     fn test_foo() {
-        let mut state = Blake2bState::default();
-        state.update(b"foo");
-        let hash = state.finalize();
-        let expected: Vec<u8> = FromHex::from_hex(
-            "ca002330e69d3e6b84a46a56a6533fd79d51d97a3bb7cad6c2ff43b354185d6dc1e723fb3db4ae0737e120378424c714bb982d9dc5bbd7a0ab318240ddd18f8d",
-        ).unwrap();
-        assert_eq!(&*hash, &*expected);
+        let hash = Blake2bState::new(16).update(b"foo").finalize().to_hex();
+        assert_eq!("04136e24f85d470465c3db66e58ed56c", hash);
+
+        // Make sure feeding one byte at a time gives the same answer.
+        let hash2 = Blake2bState::new(16)
+            .update(b"f")
+            .update(b"o")
+            .update(b"o")
+            .finalize()
+            .to_hex();
+        assert_eq!("04136e24f85d470465c3db66e58ed56c", hash2);
     }
 
     #[test]
-    fn test_foo_letter_by_letter() {
-        let mut state = Blake2bState::default();
-        state.update(b"f");
-        state.update(b"o");
-        state.update(b"o");
-        let hash = state.finalize();
-        let expected: Vec<u8> = FromHex::from_hex(
-            "ca002330e69d3e6b84a46a56a6533fd79d51d97a3bb7cad6c2ff43b354185d6dc1e723fb3db4ae0737e120378424c714bb982d9dc5bbd7a0ab318240ddd18f8d",
-        ).unwrap();
-        assert_eq!(&*hash, &*expected);
+    fn test_large_input() {
+        let input = vec![0; 1_000_000];
+        // Check several different digest lengths.
+        let answers = &[
+            "15",
+            "b930",
+            "459494",
+            "93a83d45",
+            "28e7fa6b489b7557",
+            "6990ee96760194861181a9ddeadd4007",
+            "0cbf381956ec0d36533b813283c85bc12142a0512ae86f59e0d4342af99010b6",
+            "2b5e760175daa6f07397df9dce3b40aaa47ba59b513c15b523ffc2a086a2f9c05a0ac4251c869cca0f3b67478d3933c604705a0bf041030c2d7d0578e3f783",
+            "9ef8b51be521c6e33abb22d6a69363902b6d7eb67ca1364ebc87a64d5a36ec5e749e5c9e7029a85b0008e46cff24281e87500886818dbe79dc8e094f119bbeb8",
+        ];
+        for &answer in answers {
+            let hash = Blake2bState::new(answer.len() / 2)
+                .update(&input)
+                .finalize()
+                .to_hex();
+            assert_eq!(answer, hash);
+        }
     }
 
     #[test]
     fn test_all_parameters() {
-        let mut state = Blake2bBuilder::new()
-            .digest_length(16)
+        let hash = Blake2bBuilder::new()
+            .digest_length(17)
             .key(b"bar")
             .salt(b"baz")
             .personal(b"bing")
@@ -227,10 +259,10 @@ mod test {
             .node_depth(6)
             .inner_hash_length(7)
             .last_node(true)
-            .build();
-        state.update(b"foo");
-        let hash = state.finalize();
-        let expected: Vec<u8> = FromHex::from_hex("920568b0c5873b2f0ab67bedb6cf1b2b").unwrap();
-        assert_eq!(&*hash, &*expected);
+            .build()
+            .update(b"foo")
+            .finalize()
+            .to_hex();
+        assert_eq!("8cf9408d6c57cb17802e24821631a881dc", hash);
     }
 }
