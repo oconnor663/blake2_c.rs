@@ -10,7 +10,7 @@ pub const PERSONALBYTES: usize = libb2_sys::BLAKE2B_PERSONALBYTES as usize;
 
 pub struct Blake2bBuilder {
     params: libb2_sys::blake2b_param,
-    key: [u8; KEYBYTES as usize],
+    key_block: [u8; BLOCKBYTES as usize],
     last_node: bool,
 }
 
@@ -30,7 +30,7 @@ impl Blake2bBuilder {
                 salt: [0; 16],
                 personal: [0; 16],
             },
-            key: [0; KEYBYTES],
+            key_block: [0; BLOCKBYTES],
             last_node: false,
         }
     }
@@ -45,83 +45,96 @@ impl Blake2bBuilder {
         Blake2bState { inner }
     }
 
-    pub fn digest_length(&mut self, len: usize) {
-        if len < 1 {
-            panic!("Digest length must be at least 1.");
+    pub fn digest_length(&mut self, length: usize) -> &mut Self {
+        if length == 0 || length > OUTBYTES {
+            panic!("Bad digest length: {}", length);
         }
-        if len > OUTBYTES {
-            panic!("Digest length must be at most {} bytes.", OUTBYTES);
-        }
-        self.params.digest_length = len as u8;
+        self.params.digest_length = length as u8;
+        self
     }
 
-    pub fn key(&mut self, key: &[u8]) {
+    /// An empty key is equivalent to having no key at all.
+    pub fn key(&mut self, key: &[u8]) -> &mut Self {
         if key.len() > KEYBYTES {
-            panic!("Key must be at most {} bytes.", KEYBYTES);
+            panic!("Bad key length: {}", key.len());
         }
-        self.key = [0; KEYBYTES];
-        self.key[..key.len()].copy_from_slice(key);
+        self.key_block = [0; BLOCKBYTES];
+        self.key_block[..key.len()].copy_from_slice(key);
         self.params.key_length = key.len() as u8;
+        self
     }
 
-    pub fn salt(&mut self, salt: &[u8]) {
+    pub fn fanout(&mut self, fanout: usize) -> &mut Self {
+        if fanout > 255 {
+            panic!("Bad fanout: {}", fanout);
+        }
+        self.params.fanout = fanout as u8;
+        self
+    }
+
+    pub fn max_depth(&mut self, depth: usize) -> &mut Self {
+        if depth == 0 || depth > 255 {
+            panic!("Bad max depth: {}", depth);
+        }
+        self.params.depth = depth as u8;
+        self
+    }
+
+    pub fn max_leaf_length(&mut self, length: u32) -> &mut Self {
+        // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
+        self.params.leaf_length = length.to_le();
+        self
+    }
+
+    pub fn node_offset(&mut self, offset: u64) -> &mut Self {
+        // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
+        self.params.node_offset = offset.to_le();
+        self
+    }
+
+    pub fn node_depth(&mut self, depth: usize) -> &mut Self {
+        if depth > 255 {
+            panic!("Bad node depth: {}", depth);
+        }
+        self.params.node_depth = depth as u8;
+        self
+    }
+
+    pub fn inner_hash_length(&mut self, length: usize) -> &mut Self {
+        if length > OUTBYTES {
+            panic!("Bad inner hash length: {}", length);
+        }
+        self.params.inner_length = length as u8;
+        self
+    }
+
+    pub fn salt(&mut self, salt: &[u8]) -> &mut Self {
         if salt.len() > SALTBYTES {
-            panic!("Salt must be at most {} bytes.", SALTBYTES);
+            panic!("Bad salt length: {}", salt.len());
         }
         self.params.salt = [0; SALTBYTES];
         self.params.salt[..salt.len()].copy_from_slice(salt);
+        self
     }
 
-    pub fn personal(&mut self, personal: &[u8]) {
+    pub fn personal(&mut self, personal: &[u8]) -> &mut Self {
         if personal.len() > PERSONALBYTES {
-            panic!("Personalization must be at most {} bytes.", PERSONALBYTES);
+            panic!("Bad personalization length: {}", personal.len());
         }
-        self.params.personal = [0; SALTBYTES];
+        self.params.personal = [0; PERSONALBYTES];
         self.params.personal[..personal.len()].copy_from_slice(personal);
+        self
     }
 
-    pub fn fanout(&mut self, fanout: u8) {
-        self.params.fanout = fanout;
-    }
-
-    pub fn max_depth(&mut self, depth: u8) {
-        if depth == 0 {
-            panic!("Max depth must be at least 1.");
-        }
-        self.params.depth = depth;
-    }
-
-    pub fn max_leaf_length(&mut self, len: u32) {
-        // NOTE: Tricky endianness issues here. CPython gets this wrong.
-        // See https://github.com/BLAKE2/libb2/issues/12.
-        self.params.leaf_length = len.to_le();
-    }
-
-    pub fn node_offset(&mut self, offset: u64) {
-        // NOTE: Tricky endianness issues here. CPython gets this wrong.
-        // See https://github.com/BLAKE2/libb2/issues/12.
-        self.params.node_offset = offset.to_le();
-    }
-
-    pub fn node_depth(&mut self, depth: u8) {
-        self.params.node_depth = depth;
-    }
-
-    pub fn inner_length(&mut self, length: usize) {
-        if length > OUTBYTES {
-            panic!("Inner length must be at most {}.", OUTBYTES);
-        }
-        self.params.inner_length = length as u8;
-    }
-
-    pub fn last_node(&mut self, last: bool) {
+    pub fn last_node(&mut self, last: bool) -> &mut Self {
         self.last_node = last;
+        self
     }
 }
 
 impl Drop for Blake2bBuilder {
     fn drop(&mut self) {
-        clear_on_drop::clear::Clear::clear(&mut self.key[..]);
+        clear_on_drop::clear::Clear::clear(&mut self.key_block[..]);
     }
 }
 
