@@ -3,18 +3,25 @@ extern crate constant_time_eq;
 extern crate libb2_sys;
 
 macro_rules! blake2_impl {
-    ($modname:ident) => {
+    {
+        $modname:ident,
+        $blockbytes:expr,
+        $outbytes:expr,
+        $keybytes:expr,
+        $saltbytes:expr,
+        $personalbytes:expr,
+    } => {
 pub mod $modname {
     use arrayvec::{ArrayVec, ArrayString};
     use constant_time_eq::constant_time_eq;
     use std::mem;
     use libb2_sys;
 
-    pub const BLOCKBYTES: usize = libb2_sys::BLAKE2B_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = libb2_sys::BLAKE2B_OUTBYTES as usize;
-    pub const KEYBYTES: usize = libb2_sys::BLAKE2B_KEYBYTES as usize;
-    pub const SALTBYTES: usize = libb2_sys::BLAKE2B_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = libb2_sys::BLAKE2B_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = $blockbytes as usize;
+    pub const OUTBYTES: usize = $outbytes as usize;
+    pub const KEYBYTES: usize = $keybytes as usize;
+    pub const SALTBYTES: usize = $saltbytes as usize;
+    pub const PERSONALBYTES: usize = $personalbytes as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
@@ -219,7 +226,12 @@ pub mod $modname {
 }} // end of blake2_impl!
 
 blake2_impl!{
-    blake2b
+    blake2b,
+    libb2_sys::BLAKE2B_BLOCKBYTES,
+    libb2_sys::BLAKE2B_OUTBYTES,
+    libb2_sys::BLAKE2B_KEYBYTES,
+    libb2_sys::BLAKE2B_SALTBYTES,
+    libb2_sys::BLAKE2B_PERSONALBYTES,
 }
 
 #[cfg(test)]
