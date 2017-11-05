@@ -6,10 +6,6 @@ use std::os::raw::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 
-// The libb2-sys package on crates.io is out of date as of Nov 2017, and its
-// build script is kind of wasteful, so we include our own bindings. If this
-// turns out to conflict with another package, though, we can figure out how to
-// share them.
 #[allow(warnings)]
 mod sys;
 

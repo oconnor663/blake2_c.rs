@@ -1,7 +1,7 @@
 /// This is a trivial copy of the b2sum command line utility, mainly for
 /// benchmarking.
 
-extern crate libb2;
+extern crate blake2_c;
 
 use std::io::stdin;
 use std::io::prelude::*;
@@ -9,7 +9,7 @@ use std::io::prelude::*;
 fn main() {
     let stdin = stdin();
     let mut stdin_lock = stdin.lock();
-    let mut state = libb2::blake2b::State::new(64);
+    let mut state = blake2_c::blake2b::State::new(64);
     // Using a big buffer like this is slightly more efficient than copy().
     let mut buf = [0; 65536];
     loop {
