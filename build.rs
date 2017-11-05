@@ -2,60 +2,38 @@
 
 use std::path::*;
 use std::process::*;
-use std::thread::sleep;
-use std::time::Duration;
 use std::env;
 use std::io::*;
 
 fn main() {
-    let mut cflags = env::var("CFLAGS").unwrap_or(String::new());
-    let target = env::var("TARGET").unwrap();
-
-    if target.contains("i686") {
-        cflags.push_str(" -m32");
-    } else if target.contains("x86_64") {
-        cflags.push_str(" -m64");
-    }
-
-    if !target.contains("i686") {
-        cflags.push_str(" -fPIC");
-    }
-
     let src = PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("libb2");
     let dst = PathBuf::from(&env::var("OUT_DIR").unwrap());
 
-    // Avoid trying to rebuild the generated files when checked out from git
-    run(Command::new("touch").arg(src.join("aclocal.m4")), "touch");
-    sleep(Duration::from_millis(1000));
-    run(Command::new("touch").arg(src.join("Makefile.in")), "touch");
-    run(Command::new("touch").arg(src.join("configure")), "touch");
-
-    run(
-        Command::new("./configure")
-            .arg("--prefix")
-            .arg(&dst)
-            .current_dir(&src),
-        "configure?",
-    );
-    run(Command::new("make").current_dir(&src), "make");
-    run(
-        Command::new("make").arg("install").current_dir(&src),
-        "make",
-    );
+    // `make` will automatically rerun `./configure` if the timestamps imply
+    // that it needs to.
+    if !src.join("Makefile").is_file() {
+        run(
+            Command::new("./configure")
+                .arg("--prefix")
+                .arg(&dst)
+                .current_dir(&src),
+        );
+    }
+    run(Command::new("make").current_dir(&src));
+    run(Command::new("make").arg("install").current_dir(&src));
 
     println!("cargo:rustc-flags=-l static=b2");
     println!("cargo:rustc-flags=-L {}", dst.join("lib").display());
 }
 
-fn run(cmd: &mut Command, program: &str) {
+fn run(cmd: &mut Command) {
     println!("running: {:?}", cmd);
     let status = match cmd.status() {
         Ok(status) => status,
         Err(ref e) if e.kind() == ErrorKind::NotFound => {
             fail(&format!(
-                "failed to execute command: {}\nis `{}` not installed?",
+                "failed to execute command: {}\nnot installed?",
                 e,
-                program
             ));
         }
         Err(e) => fail(&format!("failed to execute command: {}", e)),
