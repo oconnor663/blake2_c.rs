@@ -10,6 +10,7 @@ use constant_time_eq::constant_time_eq;
 // build script is kind of wasteful, so we include our own bindings. If this
 // turns out to conflict with another package, though, we can figure out how to
 // share them.
+#[allow(warnings)]
 mod sys;
 
 pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
