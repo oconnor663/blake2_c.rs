@@ -122,8 +122,9 @@ pub mod blake2b {
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
             // The version of "blake2.h" we're using includes the xof_length
             // param from BLAKE2X, which occupies the high bits of node_offset.
-            self.params.node_offset = offset as u32;
-            self.params.xof_length = (offset >> 32) as u32;
+            // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
+            self.params.node_offset = (offset as u32).to_le();
+            self.params.xof_length = ((offset >> 32) as u32).to_le();
             self
         }
 
@@ -348,8 +349,9 @@ pub mod blake2s {
             if offset > ((1 << 48) - 1) {
                 panic!("Bad node offset: {}", offset);
             }
-            self.params.node_offset = offset as u32;
-            self.params.xof_length = (offset >> 32) as u16;
+            // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
+            self.params.node_offset = (offset as u32).to_le();
+            self.params.xof_length = ((offset >> 32) as u16).to_le();
             self
         }
 
