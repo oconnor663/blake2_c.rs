@@ -36,6 +36,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", entry.path().to_str().unwrap());
     }
 
+    run(Command::new("./autogen.sh").current_dir(&src_copy));
     let mut configure_cmd = Command::new("./configure");
     configure_cmd.current_dir(&src_copy);
     configure_cmd.arg("--prefix");
