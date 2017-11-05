@@ -1,7 +1,8 @@
 [package]
-name = "libb2"
+name = "blake2_c"
 version = "0.1.0"
 authors = ["Jack O'Connor <oconnor663@gmail.com>"]
+license = "MIT"
 build = "build.rs"
 
 [features]
