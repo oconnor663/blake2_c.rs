@@ -6,6 +6,8 @@ rust:
   - stable
   - beta
   - nightly
+env:
+  - FEATURES=
+  - FEATURES=native
 script:
-  - cargo test --verbose
-  - cargo test --verbose --features native
+  - cargo test --verbose --features $FEATURES
