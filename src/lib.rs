@@ -594,16 +594,16 @@ mod test {
             .personal(b"bing")
             .fanout(2)
             .max_depth(3)
-            .max_leaf_length(4)
-            .node_offset(5)
-            .node_depth(6)
-            .inner_hash_length(7)
+            .max_leaf_length(0x04050607)
+            .node_offset(0x08090a0b0c0d0e0f)
+            .node_depth(16)
+            .inner_hash_length(17)
             .last_node(true)
             .build()
             .update(b"foo")
             .finalize()
             .hex();
-        assert_eq!("8cf9408d6c57cb17802e24821631a881dc", &*hash);
+        assert_eq!("0dea28da297ebeb1abb7fdd4c573887349", &*hash);
     }
 
     #[test]
@@ -615,16 +615,16 @@ mod test {
             .personal(b"bing")
             .fanout(2)
             .max_depth(3)
-            .max_leaf_length(4)
-            .node_offset(5)
-            .node_depth(6)
-            .inner_hash_length(7)
+            .max_leaf_length(0x04050607)
+            .node_offset(0x08090a0b0c0d)
+            .node_depth(16)
+            .inner_hash_length(17)
             .last_node(true)
             .build()
             .update(b"foo")
             .finalize()
             .hex();
-        assert_eq!("a6a418a8c97d2c7801b3c8c86aa243aa75", &*hash);
+        assert_eq!("179b9a70409efca3310998dd8aacc0a5dd", &*hash);
     }
 
     #[test]
