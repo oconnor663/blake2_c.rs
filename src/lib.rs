@@ -27,11 +27,11 @@ pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
 pub mod blake2b {
     use super::*;
 
-    pub const BLOCKBYTES: usize = sys::blake2b_constant_BLAKE2B_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = sys::blake2b_constant_BLAKE2B_OUTBYTES as usize;
-    pub const KEYBYTES: usize = sys::blake2b_constant_BLAKE2B_KEYBYTES as usize;
-    pub const SALTBYTES: usize = sys::blake2b_constant_BLAKE2B_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = sys::blake2b_constant_BLAKE2B_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = sys::blake2b_constant::BLAKE2B_BLOCKBYTES as usize;
+    pub const OUTBYTES: usize = sys::blake2b_constant::BLAKE2B_OUTBYTES as usize;
+    pub const KEYBYTES: usize = sys::blake2b_constant::BLAKE2B_KEYBYTES as usize;
+    pub const SALTBYTES: usize = sys::blake2b_constant::BLAKE2B_SALTBYTES as usize;
+    pub const PERSONALBYTES: usize = sys::blake2b_constant::BLAKE2B_PERSONALBYTES as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
@@ -251,11 +251,11 @@ pub mod blake2b {
 pub mod blake2s {
     use super::*;
 
-    pub const BLOCKBYTES: usize = sys::blake2s_constant_BLAKE2S_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = sys::blake2s_constant_BLAKE2S_OUTBYTES as usize;
-    pub const KEYBYTES: usize = sys::blake2s_constant_BLAKE2S_KEYBYTES as usize;
-    pub const SALTBYTES: usize = sys::blake2s_constant_BLAKE2S_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = sys::blake2s_constant_BLAKE2S_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = sys::blake2s_constant::BLAKE2S_BLOCKBYTES as usize;
+    pub const OUTBYTES: usize = sys::blake2s_constant::BLAKE2S_OUTBYTES as usize;
+    pub const KEYBYTES: usize = sys::blake2s_constant::BLAKE2S_KEYBYTES as usize;
+    pub const SALTBYTES: usize = sys::blake2s_constant::BLAKE2S_SALTBYTES as usize;
+    pub const PERSONALBYTES: usize = sys::blake2s_constant::BLAKE2S_PERSONALBYTES as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
