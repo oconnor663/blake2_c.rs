@@ -10,4 +10,4 @@ env:
   - FEATURES=
   - FEATURES=native
 script:
-  - cargo test -vv --features $FEATURES
+  - cargo test -vv --features "$FEATURES"
