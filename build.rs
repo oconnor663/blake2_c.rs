@@ -43,7 +43,7 @@ fn main() {
         "make",
     );
 
-    println!("cargo:rustc-flags=-l b2");
+    println!("cargo:rustc-flags=-l static=b2");
     println!("cargo:rustc-flags=-L {}", dst.join("lib").display());
 }
 
