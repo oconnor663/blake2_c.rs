@@ -12,18 +12,22 @@ fn main() {
     // `make` will automatically rerun `./configure` if the timestamps imply
     // that it needs to.
     if !src.join("Makefile").is_file() {
-        run(
-            Command::new("./configure")
-                .arg("--prefix")
-                .arg(&dst)
-                // We're statically linking. Skip building the shared libs.
-                .arg("--enable-shared=no")
-                // The "fat library" figures out at runtime what x86 SIMD
-                // extensions it can use. Without this option, binaries build
-                // on new machines might not run if copied to older machines.
-                .arg("--enable-fat")
-                .current_dir(&src),
-        );
+        let mut configure_cmd = Command::new("./configure");
+        configure_cmd.current_dir(&src);
+        configure_cmd.arg("--prefix");
+        configure_cmd.arg(&dst);
+        // We're statically linking. Skip building the shared libs.
+        configure_cmd.arg("--enable-shared=no");
+        if env::var_os("CARGO_FEATURE_NATIVE").is_some() {
+            // This is the deafault for libb2, and we're just specifying it explicitly.
+            configure_cmd.arg("--enable-native=yes");
+        } else {
+            // The "fat library" figures out at runtime what x86 SIMD
+            // extensions it can use. Without this option, binaries build
+            // on new machines might not run if copied to older machines.
+            configure_cmd.arg("--enable-fat");
+        }
+        run(&mut configure_cmd);
     }
     run(Command::new("make").current_dir(&src));
     run(Command::new("make").arg("install").current_dir(&src));

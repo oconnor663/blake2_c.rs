@@ -5,6 +5,12 @@ authors = ["Jack O'Connor <oconnor663@gmail.com>"]
 build = "build.rs"
 links = "b2"
 
+[features]
+# Turn off the `--enable-fat` option that we pass to libb2 by default. This
+# builds faster, and results in a smaller binary, but the binary might not run
+# on a machine older than the one that built it.
+native = []
+
 [dependencies]
 arrayvec = "0.4.5"
 byteorder = "1.1.0"
