@@ -5,7 +5,7 @@ extern crate walkdir;
 use std::path::*;
 use std::process::*;
 use std::env;
-use std::fs::{copy, create_dir_all};
+use std::fs::{copy, create_dir_all, metadata, remove_dir_all};
 use std::io::*;
 use walkdir::WalkDir;
 
@@ -14,20 +14,26 @@ fn main() {
     let dst = PathBuf::from(&env::var("OUT_DIR").unwrap());
 
     // Copy all the source files before running ./configure. That keeps Cargo
-    // from thinking files have "changed", so it doesn't redo the whole build
-    // every time.
+    // from thinking files have "changed" when ./configure touches them, so it
+    // doesn't redo the whole build every time.
     let src_copy = dst.join("libb2_src");
+    if src_copy.exists() {
+        println!("removing {:?}", src_copy);
+        remove_dir_all(&src_copy).unwrap();
+    }
     println!("copying {:?} to {:?}", src_orig, src_copy);
     for entry in WalkDir::new(&src_orig) {
         let entry = entry.unwrap();
         let entry_dest = src_copy.join(entry.path().strip_prefix(&src_orig).unwrap());
         if entry.file_type().is_dir() {
-            println!("mkdir {:?}", entry_dest);
             create_dir_all(entry_dest).unwrap();
         } else {
-            println!("copy {:?} {:?}", entry.path(), entry_dest);
             copy(entry.path(), entry_dest).unwrap();
         }
+        // Also explicitly tell Cargo to rerun build.rs if any of the original
+        // files change. This means that Cargo won't waste time rerunning
+        // build.rs if we only make changes on the Rust side.
+        println!("cargo:rerun-if-changed={}", entry.path().to_str().unwrap());
     }
 
     let mut configure_cmd = Command::new("./configure");
@@ -48,8 +54,8 @@ fn main() {
     run(&mut configure_cmd);
     run(Command::new("make").arg("install").current_dir(&src_copy));
 
-    println!("cargo:rustc-flags=-l static=b2");
-    println!("cargo:rustc-flags=-L {}", dst.join("lib").display());
+    println!("cargo:rustc-link-lib=static=b2");
+    println!("cargo:rustc-link-search={}", dst.join("lib").display());
 }
 
 fn run(cmd: &mut Command) {
