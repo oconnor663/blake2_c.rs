@@ -1,11 +1,12 @@
 extern crate arrayvec;
 extern crate byteorder;
 extern crate constant_time_eq;
-extern crate libb2_sys;
 
 use std::mem;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
+
+mod sys;
 
 pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
     blake2b::State::new(64).update(input).finalize()
@@ -22,15 +23,15 @@ pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
 pub mod blake2b {
     use super::*;
 
-    pub const BLOCKBYTES: usize = libb2_sys::BLAKE2B_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = libb2_sys::BLAKE2B_OUTBYTES as usize;
-    pub const KEYBYTES: usize = libb2_sys::BLAKE2B_KEYBYTES as usize;
-    pub const SALTBYTES: usize = libb2_sys::BLAKE2B_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = libb2_sys::BLAKE2B_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = sys::BLAKE2B_BLOCKBYTES as usize;
+    pub const OUTBYTES: usize = sys::BLAKE2B_OUTBYTES as usize;
+    pub const KEYBYTES: usize = sys::BLAKE2B_KEYBYTES as usize;
+    pub const SALTBYTES: usize = sys::BLAKE2B_SALTBYTES as usize;
+    pub const PERSONALBYTES: usize = sys::BLAKE2B_PERSONALBYTES as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
-        params: libb2_sys::blake2b_param,
+        params: sys::blake2b_param,
         key_block: [u8; BLOCKBYTES as usize],
         last_node: bool,
     }
@@ -38,7 +39,7 @@ pub mod blake2b {
     impl Builder {
         pub fn new() -> Self {
             Self {
-                params: libb2_sys::blake2b_param {
+                params: sys::blake2b_param {
                     digest_length: OUTBYTES as u8,
                     key_length: 0,
                     fanout: 1,
@@ -64,7 +65,7 @@ pub mod blake2b {
             let mut state;
             unsafe {
                 state = State(mem::zeroed());
-                libb2_sys::blake2b_init_param(&mut state.0, &self.params);
+                sys::blake2b_init_param(&mut state.0, &self.params);
             }
             if self.last_node {
                 state.0.last_node = 1;
@@ -163,7 +164,7 @@ pub mod blake2b {
     }
 
     // TODO: Clone, Debug
-    pub struct State(libb2_sys::blake2b_state);
+    pub struct State(sys::blake2b_state);
 
     impl State {
         /// Create a new hash state with the given digest length. For all the other
@@ -175,14 +176,14 @@ pub mod blake2b {
             let mut state;
             unsafe {
                 state = State(mem::zeroed());
-                libb2_sys::blake2b_init(&mut state.0, digest_length);
+                sys::blake2b_init(&mut state.0, digest_length);
             }
             state
         }
 
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             unsafe {
-                libb2_sys::blake2b_update(&mut self.0, input.as_ptr(), input.len());
+                sys::blake2b_update(&mut self.0, input.as_ptr(), input.len());
             }
             self
         }
@@ -194,7 +195,7 @@ pub mod blake2b {
             let mut bytes = ArrayVec::new();
             unsafe {
                 bytes.set_len(self.0.outlen as usize);
-                libb2_sys::blake2b_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
+                sys::blake2b_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
             }
             Digest { bytes }
         }
@@ -232,15 +233,15 @@ pub mod blake2b {
 pub mod blake2s {
     use super::*;
 
-    pub const BLOCKBYTES: usize = libb2_sys::BLAKE2S_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = libb2_sys::BLAKE2S_OUTBYTES as usize;
-    pub const KEYBYTES: usize = libb2_sys::BLAKE2S_KEYBYTES as usize;
-    pub const SALTBYTES: usize = libb2_sys::BLAKE2S_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = libb2_sys::BLAKE2S_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = sys::BLAKE2S_BLOCKBYTES as usize;
+    pub const OUTBYTES: usize = sys::BLAKE2S_OUTBYTES as usize;
+    pub const KEYBYTES: usize = sys::BLAKE2S_KEYBYTES as usize;
+    pub const SALTBYTES: usize = sys::BLAKE2S_SALTBYTES as usize;
+    pub const PERSONALBYTES: usize = sys::BLAKE2S_PERSONALBYTES as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
-        params: libb2_sys::blake2s_param,
+        params: sys::blake2s_param,
         key_block: [u8; BLOCKBYTES as usize],
         last_node: bool,
     }
@@ -248,7 +249,7 @@ pub mod blake2s {
     impl Builder {
         pub fn new() -> Self {
             Self {
-                params: libb2_sys::blake2s_param {
+                params: sys::blake2s_param {
                     digest_length: OUTBYTES as u8,
                     key_length: 0,
                     fanout: 1,
@@ -273,7 +274,7 @@ pub mod blake2s {
             let mut state;
             unsafe {
                 state = State(mem::zeroed());
-                libb2_sys::blake2s_init_param(&mut state.0, &self.params);
+                sys::blake2s_init_param(&mut state.0, &self.params);
             }
             if self.last_node {
                 state.0.last_node = 1;
@@ -377,7 +378,7 @@ pub mod blake2s {
     }
 
     // TODO: Clone, Debug
-    pub struct State(libb2_sys::blake2s_state);
+    pub struct State(sys::blake2s_state);
 
     impl State {
         /// Create a new hash state with the given digest length. For all the other
@@ -389,14 +390,14 @@ pub mod blake2s {
             let mut state;
             unsafe {
                 state = State(mem::zeroed());
-                libb2_sys::blake2s_init(&mut state.0, digest_length);
+                sys::blake2s_init(&mut state.0, digest_length);
             }
             state
         }
 
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             unsafe {
-                libb2_sys::blake2s_update(&mut self.0, input.as_ptr(), input.len());
+                sys::blake2s_update(&mut self.0, input.as_ptr(), input.len());
             }
             self
         }
@@ -408,7 +409,7 @@ pub mod blake2s {
             let mut bytes = ArrayVec::new();
             unsafe {
                 bytes.set_len(self.0.outlen as usize);
-                libb2_sys::blake2s_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
+                sys::blake2s_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
             }
             Digest { bytes }
         }
