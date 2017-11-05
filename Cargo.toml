@@ -9,7 +9,6 @@ native = []
 
 [dependencies]
 arrayvec = "0.4.5"
-byteorder = "1.1.0"
 constant_time_eq = "0.1.3"
 
 [build-dependencies]

@@ -1,8 +1,8 @@
 extern crate arrayvec;
-extern crate byteorder;
 extern crate constant_time_eq;
 
 use std::mem;
+use std::os::raw::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 
@@ -27,11 +27,11 @@ pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
 pub mod blake2b {
     use super::*;
 
-    pub const BLOCKBYTES: usize = sys::BLAKE2B_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = sys::BLAKE2B_OUTBYTES as usize;
-    pub const KEYBYTES: usize = sys::BLAKE2B_KEYBYTES as usize;
-    pub const SALTBYTES: usize = sys::BLAKE2B_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = sys::BLAKE2B_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = sys::blake2b_constant_BLAKE2B_BLOCKBYTES as usize;
+    pub const OUTBYTES: usize = sys::blake2b_constant_BLAKE2B_OUTBYTES as usize;
+    pub const KEYBYTES: usize = sys::blake2b_constant_BLAKE2B_KEYBYTES as usize;
+    pub const SALTBYTES: usize = sys::blake2b_constant_BLAKE2B_SALTBYTES as usize;
+    pub const PERSONALBYTES: usize = sys::blake2b_constant_BLAKE2B_PERSONALBYTES as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
@@ -50,6 +50,7 @@ pub mod blake2b {
                     depth: 1,
                     leaf_length: 0,
                     node_offset: 0,
+                    xof_length: 0,
                     node_depth: 0,
                     inner_length: 0,
                     reserved: [0; 14],
@@ -122,8 +123,10 @@ pub mod blake2b {
         }
 
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
-            // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
-            self.params.node_offset = offset.to_le();
+            // The version of "blake2.h" we're using includes the xof_length
+            // param from BLAKE2X, which occupies the high bits of node_offset.
+            self.params.node_offset = offset as u32;
+            self.params.xof_length = (offset >> 32) as u32;
             self
         }
 
@@ -187,7 +190,7 @@ pub mod blake2b {
 
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             unsafe {
-                sys::blake2b_update(&mut self.0, input.as_ptr(), input.len());
+                sys::blake2b_update(&mut self.0, input.as_ptr() as *const c_void, input.len());
             }
             self
         }
@@ -198,8 +201,8 @@ pub mod blake2b {
         pub fn finalize(&mut self) -> Digest {
             let mut bytes = ArrayVec::new();
             unsafe {
-                bytes.set_len(self.0.outlen as usize);
-                sys::blake2b_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
+                bytes.set_len(self.0.outlen);
+                sys::blake2b_final(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
             }
             Digest { bytes }
         }
@@ -248,11 +251,11 @@ pub mod blake2b {
 pub mod blake2s {
     use super::*;
 
-    pub const BLOCKBYTES: usize = sys::BLAKE2S_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = sys::BLAKE2S_OUTBYTES as usize;
-    pub const KEYBYTES: usize = sys::BLAKE2S_KEYBYTES as usize;
-    pub const SALTBYTES: usize = sys::BLAKE2S_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = sys::BLAKE2S_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = sys::blake2s_constant_BLAKE2S_BLOCKBYTES as usize;
+    pub const OUTBYTES: usize = sys::blake2s_constant_BLAKE2S_OUTBYTES as usize;
+    pub const KEYBYTES: usize = sys::blake2s_constant_BLAKE2S_KEYBYTES as usize;
+    pub const SALTBYTES: usize = sys::blake2s_constant_BLAKE2S_SALTBYTES as usize;
+    pub const PERSONALBYTES: usize = sys::blake2s_constant_BLAKE2S_PERSONALBYTES as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
@@ -270,7 +273,8 @@ pub mod blake2s {
                     fanout: 1,
                     depth: 1,
                     leaf_length: 0,
-                    node_offset: [0; 6],
+                    node_offset: 0,
+                    xof_length: 0,
                     node_depth: 0,
                     inner_length: 0,
                     salt: [0; SALTBYTES],
@@ -342,13 +346,13 @@ pub mod blake2s {
         }
 
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
-            use byteorder::{ByteOrder, LittleEndian};
+            // The version of "blake2.h" we're using includes the xof_length
+            // param from BLAKE2X, which occupies the high bits of node_offset.
             if offset > ((1 << 48) - 1) {
                 panic!("Bad node offset: {}", offset);
             }
-            let mut buf = [0; 8];
-            LittleEndian::write_u64(&mut buf, offset);
-            self.params.node_offset[..].copy_from_slice(&buf[..6]);
+            self.params.node_offset = offset as u32;
+            self.params.xof_length = (offset >> 32) as u16;
             self
         }
 
@@ -412,7 +416,7 @@ pub mod blake2s {
 
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             unsafe {
-                sys::blake2s_update(&mut self.0, input.as_ptr(), input.len());
+                sys::blake2s_update(&mut self.0, input.as_ptr() as *const c_void, input.len());
             }
             self
         }
@@ -423,8 +427,8 @@ pub mod blake2s {
         pub fn finalize(&mut self) -> Digest {
             let mut bytes = ArrayVec::new();
             unsafe {
-                bytes.set_len(self.0.outlen as usize);
-                sys::blake2s_final(&mut self.0, bytes.as_mut_ptr(), bytes.len());
+                bytes.set_len(self.0.outlen);
+                sys::blake2s_final(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
             }
             Digest { bytes }
         }
