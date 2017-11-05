@@ -16,6 +16,12 @@ fn main() {
             Command::new("./configure")
                 .arg("--prefix")
                 .arg(&dst)
+                // We're statically linking. Skip building the shared libs.
+                .arg("--enable-shared=no")
+                // The "fat library" figures out at runtime what x86 SIMD
+                // extensions it can use. Without this option, binaries build
+                // on new machines might not run if copied to older machines.
+                .arg("--enable-fat")
                 .current_dir(&src),
         );
     }
