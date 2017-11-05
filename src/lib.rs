@@ -201,6 +201,17 @@ pub mod blake2b {
         }
     }
 
+    impl std::io::Write for State {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.update(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
     /// Holds a Blake2 hash. Supports constant-time equality, for cases where
     /// Blake2 is being used as a MAC. Althought digest lengths can vary at
     /// runtime, this type uses a statically-allocated ArrayVec. It could support
@@ -415,6 +426,17 @@ pub mod blake2s {
         }
     }
 
+    impl std::io::Write for State {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.update(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
     /// Holds a Blake2 hash. Supports constant-time equality, for cases where
     /// Blake2 is being used as a MAC. Althought digest lengths can vary at
     /// runtime, this type uses a statically-allocated ArrayVec. It could support
@@ -522,10 +544,11 @@ mod test {
             "9ef8b51be521c6e33abb22d6a69363902b6d7eb67ca1364ebc87a64d5a36ec5e749e5c9e7029a85b0008e46cff24281e87500886818dbe79dc8e094f119bbeb8",
         ];
         for &answer in answers {
-            let hash = blake2b::State::new(answer.len() / 2)
-                .update(&input)
-                .finalize()
-                .hex();
+            // While we're at it, test the std::io::Write interface.
+            use std::io::Write;
+            let mut state = blake2b::State::new(answer.len() / 2);
+            state.write_all(&input).unwrap();
+            let hash = state.finalize().hex();
             assert_eq!(answer, &*hash);
         }
     }
@@ -545,10 +568,11 @@ mod test {
             "cc07784ef067dd3e05f2d0720933ef177846b9719b1e0741c607aca3ff7a38ae",
         ];
         for &answer in answers {
-            let hash = blake2s::State::new(answer.len() / 2)
-                .update(&input)
-                .finalize()
-                .hex();
+            // While we're at it, test the std::io::Write interface.
+            use std::io::Write;
+            let mut state = blake2s::State::new(answer.len() / 2);
+            state.write_all(&input).unwrap();
+            let hash = state.finalize().hex();
             assert_eq!(answer, &*hash);
         }
     }
