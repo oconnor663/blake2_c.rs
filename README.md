@@ -1,4 +1,4 @@
-# blake2_c
+# blake2_c [![Build Status](https://travis-ci.org/oconnor663/blake2_c.rs.svg?branch=master)](https://travis-ci.org/oconnor663/blake2_c.rs) [![Build status](https://ci.appveyor.com/api/projects/status/9g5e5ji73197so2e/branch/master?svg=true)](https://ci.appveyor.com/project/oconnor663/blake2-c-rs/branch/master)
 
 This is a safe Rust wrapper around the [C implementation of
 BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
