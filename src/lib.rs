@@ -64,7 +64,9 @@ pub mod $name {
     pub const SALTBYTES: usize = $saltbytes as usize;
     pub const PERSONALBYTES: usize = $personalbytes as usize;
 
-    // TODO: Clone, Debug
+    /// A builder for `State` that lets you set all the various Blake2
+    /// parameters.
+    #[derive(Clone)] // TODO: Debug
     pub struct Builder {
         params: $param_type,
         key_block: [u8; BLOCKBYTES as usize],
@@ -195,7 +197,8 @@ pub mod $name {
         }
     }
 
-    // TODO: Clone, Debug
+    /// Computes a Blake2 hash incrementally.
+    #[derive(Clone)] // TODO: Debug
     pub struct State($state_type);
 
     impl State {
