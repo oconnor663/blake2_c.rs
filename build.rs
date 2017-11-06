@@ -23,15 +23,21 @@ fn main() {
         header_path = "./BLAKE2/ref/blake2.h";
     }
 
-    let bindings = bindgen::Builder::default()
+    // Generate bindings.rs from blake2.h. We use the header file from ref/ or
+    // sse/ as appropriate, though currently they're identical.
+    let mut builder = bindgen::Builder::default()
         .header(header_path)
         .constified_enum_module("blake2b_constant")
         .constified_enum_module("blake2s_constant")
         // If we don't blacklist this max_align_t we get a test failure:
         // https://github.com/rust-lang-nursery/rust-bindgen/issues/550.
-        .blacklist_type("max_align_t")
-        .generate()
-        .expect("Unable to generate bindings");
+        .blacklist_type("max_align_t");
+    if cfg!(windows) {
+        // Layout tests aren't working on Windows.
+        // https://github.com/rust-lang-nursery/rust-bindgen/issues/1009#issuecomment-342041560.
+        builder = builder.layout_tests(false);
+    }
+    let bindings = builder.generate().expect("Unable to generate bindings");
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_path.join("bindings.rs"))
