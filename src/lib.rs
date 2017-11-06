@@ -6,8 +6,13 @@ use std::os::raw::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 
-#[allow(warnings)]
-mod sys;
+#[allow(non_upper_case_globals)]
+#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
+#[allow(unused)]
+mod sys {
+    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+}
 
 pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
     blake2b::State::new(64).update(input).finalize()
