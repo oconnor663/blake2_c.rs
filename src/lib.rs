@@ -23,13 +23,8 @@ use std::os::raw::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 
-#[allow(non_upper_case_globals)]
-#[allow(non_camel_case_types)]
-#[allow(non_snake_case)]
-#[allow(unused)]
-mod sys {
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-}
+#[allow(warnings)]
+mod sys;
 
 pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
     blake2b::State::new(64).update(input).finalize()
@@ -480,5 +475,12 @@ mod test {
             &*blake2s_256(b"abc").hex(),
             "508c5e8c327c14e2e1a72ba34eeb452f37458b209ed63a294d999b4c86675982"
         );
+    }
+
+    #[test]
+    fn test_param_struct_size() {
+        // These are part of the spec: https://blake2.net/blake2.pdf.
+        assert_eq!(64, mem::size_of::<sys::blake2b_param>());
+        assert_eq!(32, mem::size_of::<sys::blake2s_param>());
     }
 }
