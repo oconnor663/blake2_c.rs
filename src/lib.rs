@@ -26,14 +26,17 @@ use constant_time_eq::constant_time_eq;
 #[allow(warnings)]
 mod sys;
 
+/// An all-at-once convenience function for Blake2b-512.
 pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
     blake2b::State::new(64).update(input).finalize()
 }
 
+/// An all-at-once convenience function for Blake2b-256.
 pub fn blake2b_256(input: &[u8]) -> blake2b::Digest {
     blake2b::State::new(32).update(input).finalize()
 }
 
+/// An all-at-once convenience function for Blake2s-256.
 pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
     blake2s::State::new(32).update(input).finalize()
 }
@@ -89,6 +92,8 @@ pub mod $name {
             }
         }
 
+        /// Create a `State` instance with all the parameters from this
+        /// `Builder`.
         pub fn build(&self) -> State {
             let mut state;
             unsafe {
@@ -112,7 +117,11 @@ pub mod $name {
             self
         }
 
-        /// An empty key is equivalent to having no key at all.
+        /// An empty key is equivalent to having no key at all. Also note that
+        /// neither `Builder` nor `State` zeroes out their memory on drop, so
+        /// callers who worry about secret keys sticking around in memory need
+        /// to zero their own stacks. See for example the
+        /// [`clear_on_drop`](https://crates.io/crates/clear_on_drop) crate.
         pub fn key(&mut self, key: &[u8]) -> &mut Self {
             if key.len() > KEYBYTES {
                 panic!("Bad key length: {}", key.len());
@@ -202,8 +211,9 @@ pub mod $name {
     pub struct State($state_type);
 
     impl State {
-        /// Create a new hash state with the given digest length. For all the other
-        /// Blake2 parameters, including keying, use a builder instead.
+        /// Create a new hash state with the given digest length, and default
+        /// values for all the other parameters. If you need to set other
+        /// Blake2 parameters, including keying, use a `Builder` instead.
         pub fn new(digest_length: usize) -> Self {
             if digest_length == 0 || digest_length > OUTBYTES {
                 panic!("Bad digest length: {}", digest_length);
@@ -216,6 +226,7 @@ pub mod $name {
             state
         }
 
+        /// Write input to the hash. You can call `update` any number of times.
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             unsafe {
                 $update_fn(&mut self.0, input.as_ptr() as *const c_void, input.len());
@@ -223,9 +234,9 @@ pub mod $name {
             self
         }
 
-        /// Return the finalized hash. `finalize` takes `&mut self` so that you can
-        /// chain method calls together easily, but calling it more than once on
-        /// the same instance will give you a garbage result.
+        /// Return the final hash. `finalize` takes `&mut self` so that you can
+        /// chain method calls together easily, but calling it more than once
+        /// on the same state will give you a garbage result.
         pub fn finalize(&mut self) -> Digest {
             let mut bytes = ArrayVec::new();
             unsafe {
@@ -247,10 +258,10 @@ pub mod $name {
         }
     }
 
-    /// Holds a Blake2 hash. Supports constant-time equality, for cases where
-    /// Blake2 is being used as a MAC. Althought digest lengths can vary at
-    /// runtime, this type uses a statically-allocated ArrayVec. It could support
-    /// `no_std`, though that's not yet implemented.
+    /// A finalized Blake2 hash. Supports constant-time equality, for cases
+    /// where Blake2 is being used as a MAC. Althought digest lengths can vary
+    /// at runtime, this type uses a statically-allocated ArrayVec. It could
+    /// support `no_std`, though that's not yet implemented.
     #[derive(Clone, Debug)]
     pub struct Digest {
         pub bytes: ArrayVec<[u8; OUTBYTES]>,
