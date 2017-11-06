@@ -2,6 +2,9 @@
 name = "blake2_c"
 version = "0.1.0"
 authors = ["Jack O'Connor <oconnor663@gmail.com>"]
+description = "a safe wrapper for the official BLAKE2 C implementation"
+repository = "https://github.com/oconnor663/blake2_c.rs"
+documentation = "https://docs.rs/blake2_c"
 license = "MIT"
 build = "build.rs"
 
