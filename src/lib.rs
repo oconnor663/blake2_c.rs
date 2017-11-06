@@ -26,39 +26,46 @@ pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
     blake2s::State::new(32).update(input).finalize()
 }
 
-pub mod blake2b {
+macro_rules! blake2_impl {
+    {
+        $name:ident,
+        $blockbytes:path,
+        $outbytes:path,
+        $keybytes:path,
+        $saltbytes:path,
+        $personalbytes:path,
+        $param_type:path,
+        $state_type:path,
+        $init_fn:path,
+        $init_param_fn:path,
+        $update_fn:path,
+        $finalize_fn:path,
+        $node_offset_max:expr,
+        $xof_length_type:ty,
+    } => {
+pub mod $name {
     use super::*;
 
-    pub const BLOCKBYTES: usize = sys::blake2b_constant::BLAKE2B_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = sys::blake2b_constant::BLAKE2B_OUTBYTES as usize;
-    pub const KEYBYTES: usize = sys::blake2b_constant::BLAKE2B_KEYBYTES as usize;
-    pub const SALTBYTES: usize = sys::blake2b_constant::BLAKE2B_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = sys::blake2b_constant::BLAKE2B_PERSONALBYTES as usize;
+    pub const BLOCKBYTES: usize = $blockbytes as usize;
+    pub const OUTBYTES: usize = $outbytes as usize;
+    pub const KEYBYTES: usize = $keybytes as usize;
+    pub const SALTBYTES: usize = $saltbytes as usize;
+    pub const PERSONALBYTES: usize = $personalbytes as usize;
 
     // TODO: Clone, Debug
     pub struct Builder {
-        params: sys::blake2b_param,
+        params: $param_type,
         key_block: [u8; BLOCKBYTES as usize],
         last_node: bool,
     }
 
     impl Builder {
         pub fn new() -> Self {
+            let mut params: $param_type = unsafe { mem::zeroed() };
+            params.fanout = 1;
+            params.depth = 1;
             Self {
-                params: sys::blake2b_param {
-                    digest_length: OUTBYTES as u8,
-                    key_length: 0,
-                    fanout: 1,
-                    depth: 1,
-                    leaf_length: 0,
-                    node_offset: 0,
-                    xof_length: 0,
-                    node_depth: 0,
-                    inner_length: 0,
-                    reserved: [0; 14],
-                    salt: [0; SALTBYTES],
-                    personal: [0; PERSONALBYTES],
-                },
+                params,
                 // We don't currently attempt to zero the key bytes on drop. The
                 // builder could get moved around in the stack in any case, and
                 // drop wouldn't clear old bytes after a move. Callers who care
@@ -72,7 +79,7 @@ pub mod blake2b {
             let mut state;
             unsafe {
                 state = State(mem::zeroed());
-                sys::blake2b_init_param(&mut state.0, &self.params);
+                $init_param_fn(&mut state.0, &self.params);
             }
             if self.last_node {
                 state.0.last_node = 1;
@@ -125,11 +132,14 @@ pub mod blake2b {
         }
 
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
+            if offset > $node_offset_max {
+                panic!("Bad node offset: {}", offset);
+            }
             // The version of "blake2.h" we're using includes the xof_length
             // param from BLAKE2X, which occupies the high bits of node_offset.
             // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
             self.params.node_offset = (offset as u32).to_le();
-            self.params.xof_length = ((offset >> 32) as u32).to_le();
+            self.params.xof_length = ((offset >> 32) as $xof_length_type).to_le();
             self
         }
 
@@ -174,7 +184,7 @@ pub mod blake2b {
     }
 
     // TODO: Clone, Debug
-    pub struct State(sys::blake2b_state);
+    pub struct State($state_type);
 
     impl State {
         /// Create a new hash state with the given digest length. For all the other
@@ -186,14 +196,14 @@ pub mod blake2b {
             let mut state;
             unsafe {
                 state = State(mem::zeroed());
-                sys::blake2b_init(&mut state.0, digest_length);
+                $init_fn(&mut state.0, digest_length);
             }
             state
         }
 
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             unsafe {
-                sys::blake2b_update(&mut self.0, input.as_ptr() as *const c_void, input.len());
+                $update_fn(&mut self.0, input.as_ptr() as *const c_void, input.len());
             }
             self
         }
@@ -205,7 +215,7 @@ pub mod blake2b {
             let mut bytes = ArrayVec::new();
             unsafe {
                 bytes.set_len(self.0.outlen);
-                sys::blake2b_final(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
+                $finalize_fn(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
             }
             Digest { bytes }
         }
@@ -250,232 +260,40 @@ pub mod blake2b {
 
     impl Eq for Digest {}
 }
+}} // end of blake2_impl!
 
-pub mod blake2s {
-    use super::*;
+blake2_impl! {
+    blake2b,
+    sys::blake2b_constant::BLAKE2B_BLOCKBYTES,
+    sys::blake2b_constant::BLAKE2B_OUTBYTES,
+    sys::blake2b_constant::BLAKE2B_KEYBYTES,
+    sys::blake2b_constant::BLAKE2B_SALTBYTES,
+    sys::blake2b_constant::BLAKE2B_PERSONALBYTES,
+    sys::blake2b_param,
+    sys::blake2b_state,
+    sys::blake2b_init,
+    sys::blake2b_init_param,
+    sys::blake2b_update,
+    sys::blake2b_final,
+    u64::max_value(),
+    u32,
+}
 
-    pub const BLOCKBYTES: usize = sys::blake2s_constant::BLAKE2S_BLOCKBYTES as usize;
-    pub const OUTBYTES: usize = sys::blake2s_constant::BLAKE2S_OUTBYTES as usize;
-    pub const KEYBYTES: usize = sys::blake2s_constant::BLAKE2S_KEYBYTES as usize;
-    pub const SALTBYTES: usize = sys::blake2s_constant::BLAKE2S_SALTBYTES as usize;
-    pub const PERSONALBYTES: usize = sys::blake2s_constant::BLAKE2S_PERSONALBYTES as usize;
-
-    // TODO: Clone, Debug
-    pub struct Builder {
-        params: sys::blake2s_param,
-        key_block: [u8; BLOCKBYTES as usize],
-        last_node: bool,
-    }
-
-    impl Builder {
-        pub fn new() -> Self {
-            Self {
-                params: sys::blake2s_param {
-                    digest_length: OUTBYTES as u8,
-                    key_length: 0,
-                    fanout: 1,
-                    depth: 1,
-                    leaf_length: 0,
-                    node_offset: 0,
-                    xof_length: 0,
-                    node_depth: 0,
-                    inner_length: 0,
-                    salt: [0; SALTBYTES],
-                    personal: [0; PERSONALBYTES],
-                },
-                // We don't currently attempt to zero the key bytes on drop. The
-                // builder could get moved around in the stack in any case, and
-                // drop wouldn't clear old bytes after a move. Callers who care
-                // about this might want to look at clear_on_drop::clear_stack.
-                key_block: [0; BLOCKBYTES],
-                last_node: false,
-            }
-        }
-
-        pub fn build(&self) -> State {
-            let mut state;
-            unsafe {
-                state = State(mem::zeroed());
-                sys::blake2s_init_param(&mut state.0, &self.params);
-            }
-            if self.last_node {
-                state.0.last_node = 1;
-            }
-            if self.params.key_length > 0 {
-                state.update(&self.key_block);
-            }
-            state
-        }
-
-        pub fn digest_length(&mut self, length: usize) -> &mut Self {
-            if length == 0 || length > OUTBYTES {
-                panic!("Bad digest length: {}", length);
-            }
-            self.params.digest_length = length as u8;
-            self
-        }
-
-        /// An empty key is equivalent to having no key at all.
-        pub fn key(&mut self, key: &[u8]) -> &mut Self {
-            if key.len() > KEYBYTES {
-                panic!("Bad key length: {}", key.len());
-            }
-            self.key_block = [0; BLOCKBYTES];
-            self.key_block[..key.len()].copy_from_slice(key);
-            self.params.key_length = key.len() as u8;
-            self
-        }
-
-        pub fn fanout(&mut self, fanout: usize) -> &mut Self {
-            if fanout > 255 {
-                panic!("Bad fanout: {}", fanout);
-            }
-            self.params.fanout = fanout as u8;
-            self
-        }
-
-        pub fn max_depth(&mut self, depth: usize) -> &mut Self {
-            if depth == 0 || depth > 255 {
-                panic!("Bad max depth: {}", depth);
-            }
-            self.params.depth = depth as u8;
-            self
-        }
-
-        pub fn max_leaf_length(&mut self, length: u32) -> &mut Self {
-            // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
-            self.params.leaf_length = length.to_le();
-            self
-        }
-
-        pub fn node_offset(&mut self, offset: u64) -> &mut Self {
-            // The version of "blake2.h" we're using includes the xof_length
-            // param from BLAKE2X, which occupies the high bits of node_offset.
-            if offset > ((1 << 48) - 1) {
-                panic!("Bad node offset: {}", offset);
-            }
-            // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
-            self.params.node_offset = (offset as u32).to_le();
-            self.params.xof_length = ((offset >> 32) as u16).to_le();
-            self
-        }
-
-        pub fn node_depth(&mut self, depth: usize) -> &mut Self {
-            if depth > 255 {
-                panic!("Bad node depth: {}", depth);
-            }
-            self.params.node_depth = depth as u8;
-            self
-        }
-
-        pub fn inner_hash_length(&mut self, length: usize) -> &mut Self {
-            if length > OUTBYTES {
-                panic!("Bad inner hash length: {}", length);
-            }
-            self.params.inner_length = length as u8;
-            self
-        }
-
-        pub fn salt(&mut self, salt: &[u8]) -> &mut Self {
-            if salt.len() > SALTBYTES {
-                panic!("Bad salt length: {}", salt.len());
-            }
-            self.params.salt = [0; SALTBYTES];
-            self.params.salt[..salt.len()].copy_from_slice(salt);
-            self
-        }
-
-        pub fn personal(&mut self, personal: &[u8]) -> &mut Self {
-            if personal.len() > PERSONALBYTES {
-                panic!("Bad personalization length: {}", personal.len());
-            }
-            self.params.personal = [0; PERSONALBYTES];
-            self.params.personal[..personal.len()].copy_from_slice(personal);
-            self
-        }
-
-        pub fn last_node(&mut self, last: bool) -> &mut Self {
-            self.last_node = last;
-            self
-        }
-    }
-
-    // TODO: Clone, Debug
-    pub struct State(sys::blake2s_state);
-
-    impl State {
-        /// Create a new hash state with the given digest length. For all the other
-        /// Blake2 parameters, including keying, use a builder instead.
-        pub fn new(digest_length: usize) -> Self {
-            if digest_length == 0 || digest_length > OUTBYTES {
-                panic!("Bad digest length: {}", digest_length);
-            }
-            let mut state;
-            unsafe {
-                state = State(mem::zeroed());
-                sys::blake2s_init(&mut state.0, digest_length);
-            }
-            state
-        }
-
-        pub fn update(&mut self, input: &[u8]) -> &mut Self {
-            unsafe {
-                sys::blake2s_update(&mut self.0, input.as_ptr() as *const c_void, input.len());
-            }
-            self
-        }
-
-        /// Return the finalized hash. `finalize` takes `&mut self` so that you can
-        /// chain method calls together easily, but calling it more than once on
-        /// the same instance will give you a garbage result.
-        pub fn finalize(&mut self) -> Digest {
-            let mut bytes = ArrayVec::new();
-            unsafe {
-                bytes.set_len(self.0.outlen);
-                sys::blake2s_final(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
-            }
-            Digest { bytes }
-        }
-    }
-
-    impl std::io::Write for State {
-        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            self.update(buf);
-            Ok(buf.len())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-
-    /// Holds a Blake2 hash. Supports constant-time equality, for cases where
-    /// Blake2 is being used as a MAC. Althought digest lengths can vary at
-    /// runtime, this type uses a statically-allocated ArrayVec. It could support
-    /// `no_std`, though that's not yet implemented.
-    #[derive(Clone, Debug)]
-    pub struct Digest {
-        pub bytes: ArrayVec<[u8; OUTBYTES]>,
-    }
-
-    impl Digest {
-        pub fn hex(&self) -> ArrayString<[u8; 2 * OUTBYTES]> {
-            use std::fmt::Write;
-            let mut hexdigest = ArrayString::new();
-            for &b in &self.bytes {
-                write!(&mut hexdigest, "{:02x}", b).expect("too many bytes");
-            }
-            hexdigest
-        }
-    }
-
-    impl PartialEq for Digest {
-        fn eq(&self, other: &Digest) -> bool {
-            constant_time_eq(&self.bytes, &other.bytes)
-        }
-    }
-
-    impl Eq for Digest {}
+blake2_impl! {
+    blake2s,
+    sys::blake2s_constant::BLAKE2S_BLOCKBYTES,
+    sys::blake2s_constant::BLAKE2S_OUTBYTES,
+    sys::blake2s_constant::BLAKE2S_KEYBYTES,
+    sys::blake2s_constant::BLAKE2S_SALTBYTES,
+    sys::blake2s_constant::BLAKE2S_PERSONALBYTES,
+    sys::blake2s_param,
+    sys::blake2s_state,
+    sys::blake2s_init,
+    sys::blake2s_init_param,
+    sys::blake2s_update,
+    sys::blake2s_final,
+    ((1 << 48) - 1),
+    u16,
 }
 
 #[cfg(test)]
