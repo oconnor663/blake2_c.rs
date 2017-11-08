@@ -44,6 +44,7 @@ pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
 macro_rules! blake2_impl {
     {
         $name:ident,
+        $moddoc:meta,
         $blockbytes:expr,
         $outbytes:expr,
         $keybytes:expr,
@@ -58,6 +59,7 @@ macro_rules! blake2_impl {
         $node_offset_max:expr,
         $xof_length_type:ty,
     } => {
+#[$moddoc]
 pub mod $name {
     use super::*;
 
@@ -328,9 +330,9 @@ pub mod $name {
 }
 }} // end of blake2_impl!
 
-/// The most common version of Blake2, optimized for 64-bit processors.
 blake2_impl! {
     blake2b,
+    doc="The more common version of Blake2, optimized for 64-bit processors.",
     128,
     64,
     64,
@@ -346,9 +348,9 @@ blake2_impl! {
     u32,
 }
 
-/// The less common version of Blake2, optimized for smaller processors.
 blake2_impl! {
     blake2s,
+    doc="The less common version of Blake2, optimized for smaller processors.",
     64,
     32,
     32,
