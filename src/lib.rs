@@ -44,11 +44,11 @@ pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
 macro_rules! blake2_impl {
     {
         $name:ident,
-        $blockbytes:path,
-        $outbytes:path,
-        $keybytes:path,
-        $saltbytes:path,
-        $personalbytes:path,
+        $blockbytes:expr,
+        $outbytes:expr,
+        $keybytes:expr,
+        $saltbytes:expr,
+        $personalbytes:expr,
         $param_type:path,
         $state_type:path,
         $init_fn:path,
@@ -61,11 +61,11 @@ macro_rules! blake2_impl {
 pub mod $name {
     use super::*;
 
-    pub const BLOCKBYTES: usize = $blockbytes as usize;
-    pub const OUTBYTES: usize = $outbytes as usize;
-    pub const KEYBYTES: usize = $keybytes as usize;
-    pub const SALTBYTES: usize = $saltbytes as usize;
-    pub const PERSONALBYTES: usize = $personalbytes as usize;
+    pub const BLOCKBYTES: usize = $blockbytes;
+    pub const OUTBYTES: usize = $outbytes;
+    pub const KEYBYTES: usize = $keybytes;
+    pub const SALTBYTES: usize = $saltbytes;
+    pub const PERSONALBYTES: usize = $personalbytes;
 
     /// A builder for `State` that lets you set all the various Blake2
     /// parameters.
@@ -331,11 +331,11 @@ pub mod $name {
 /// The most common version of Blake2, optimized for 64-bit processors.
 blake2_impl! {
     blake2b,
-    sys::blake2b_constant::BLAKE2B_BLOCKBYTES,
-    sys::blake2b_constant::BLAKE2B_OUTBYTES,
-    sys::blake2b_constant::BLAKE2B_KEYBYTES,
-    sys::blake2b_constant::BLAKE2B_SALTBYTES,
-    sys::blake2b_constant::BLAKE2B_PERSONALBYTES,
+    128,
+    64,
+    64,
+    16,
+    16,
     sys::blake2b_param,
     sys::blake2b_state,
     sys::blake2b_init,
@@ -349,11 +349,11 @@ blake2_impl! {
 /// The less common version of Blake2, optimized for smaller processors.
 blake2_impl! {
     blake2s,
-    sys::blake2s_constant::BLAKE2S_BLOCKBYTES,
-    sys::blake2s_constant::BLAKE2S_OUTBYTES,
-    sys::blake2s_constant::BLAKE2S_KEYBYTES,
-    sys::blake2s_constant::BLAKE2S_SALTBYTES,
-    sys::blake2s_constant::BLAKE2S_PERSONALBYTES,
+    64,
+    32,
+    32,
+    8,
+    8,
     sys::blake2s_param,
     sys::blake2s_state,
     sys::blake2s_init,
