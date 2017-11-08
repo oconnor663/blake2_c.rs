@@ -18,6 +18,7 @@
 extern crate arrayvec;
 extern crate constant_time_eq;
 
+use std::fmt;
 use std::mem;
 use std::os::raw::c_void;
 use arrayvec::{ArrayVec, ArrayString};
@@ -79,7 +80,7 @@ pub mod $name {
     ///
     /// Most of the builder methods will panic if their input is too large or
     /// too small, as defined by the spec.
-    #[derive(Clone)] // TODO: Debug
+    #[derive(Clone)]
     pub struct Builder {
         params: $param_type,
         key_block: [u8; BLOCKBYTES as usize],
@@ -238,8 +239,16 @@ pub mod $name {
         }
     }
 
+    impl fmt::Debug for Builder {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "Builder {{ params: ")?;
+            fmt::Debug::fmt(&self.params, f)?;
+            write!(f, ", last_node: {}, key=<redacted> }}", self.last_node)
+        }
+    }
+
     /// Computes a Blake2 hash incrementally.
-    #[derive(Clone)] // TODO: Debug
+    #[derive(Clone)]
     pub struct State($state_type);
 
     impl State {
@@ -276,6 +285,12 @@ pub mod $name {
                 $finalize_fn(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
             }
             Digest { bytes }
+        }
+    }
+
+    impl fmt::Debug for State {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "State {{ outlen: {}, ... }}", self.0.outlen)
         }
     }
 
