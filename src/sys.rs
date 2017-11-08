@@ -169,22 +169,18 @@ pub type uint_fast32_t = ::std::os::raw::c_ulong;
 pub type uint_fast64_t = ::std::os::raw::c_ulong;
 pub type intmax_t = __intmax_t;
 pub type uintmax_t = __uintmax_t;
-pub mod blake2s_constant {
-    pub type Type = ::std::os::raw::c_uint;
-    pub const BLAKE2S_BLOCKBYTES: Type = 64;
-    pub const BLAKE2S_OUTBYTES: Type = 32;
-    pub const BLAKE2S_KEYBYTES: Type = 32;
-    pub const BLAKE2S_SALTBYTES: Type = 8;
-    pub const BLAKE2S_PERSONALBYTES: Type = 8;
-}
-pub mod blake2b_constant {
-    pub type Type = ::std::os::raw::c_uint;
-    pub const BLAKE2B_BLOCKBYTES: Type = 128;
-    pub const BLAKE2B_OUTBYTES: Type = 64;
-    pub const BLAKE2B_KEYBYTES: Type = 64;
-    pub const BLAKE2B_SALTBYTES: Type = 16;
-    pub const BLAKE2B_PERSONALBYTES: Type = 16;
-}
+pub const blake2s_constant_BLAKE2S_BLOCKBYTES: blake2s_constant = 64;
+pub const blake2s_constant_BLAKE2S_OUTBYTES: blake2s_constant = 32;
+pub const blake2s_constant_BLAKE2S_KEYBYTES: blake2s_constant = 32;
+pub const blake2s_constant_BLAKE2S_SALTBYTES: blake2s_constant = 8;
+pub const blake2s_constant_BLAKE2S_PERSONALBYTES: blake2s_constant = 8;
+pub type blake2s_constant = ::std::os::raw::c_uint;
+pub const blake2b_constant_BLAKE2B_BLOCKBYTES: blake2b_constant = 128;
+pub const blake2b_constant_BLAKE2B_OUTBYTES: blake2b_constant = 64;
+pub const blake2b_constant_BLAKE2B_KEYBYTES: blake2b_constant = 64;
+pub const blake2b_constant_BLAKE2B_SALTBYTES: blake2b_constant = 16;
+pub const blake2b_constant_BLAKE2B_PERSONALBYTES: blake2b_constant = 16;
+pub type blake2b_constant = ::std::os::raw::c_uint;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct blake2s_state__ {

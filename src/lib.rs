@@ -556,4 +556,36 @@ mod test {
         assert_eq!(64, mem::size_of::<sys::blake2b_param>());
         assert_eq!(32, mem::size_of::<sys::blake2s_param>());
     }
+
+    #[test]
+    fn test_constants_match() {
+        // We copy the constant by value, so that they show up clearly in the
+        // docs instead of being opaque references. Make sure their values still
+        // match.
+        let vendored = &[
+            blake2b::BLOCKBYTES,
+            blake2b::OUTBYTES,
+            blake2b::KEYBYTES,
+            blake2b::SALTBYTES,
+            blake2b::PERSONALBYTES,
+            blake2s::BLOCKBYTES,
+            blake2s::OUTBYTES,
+            blake2s::KEYBYTES,
+            blake2s::SALTBYTES,
+            blake2s::PERSONALBYTES,
+        ];
+        let original = &[
+            sys::blake2b_constant_BLAKE2B_BLOCKBYTES as usize,
+            sys::blake2b_constant_BLAKE2B_OUTBYTES as usize,
+            sys::blake2b_constant_BLAKE2B_KEYBYTES as usize,
+            sys::blake2b_constant_BLAKE2B_SALTBYTES as usize,
+            sys::blake2b_constant_BLAKE2B_PERSONALBYTES as usize,
+            sys::blake2s_constant_BLAKE2S_BLOCKBYTES as usize,
+            sys::blake2s_constant_BLAKE2S_OUTBYTES as usize,
+            sys::blake2s_constant_BLAKE2S_KEYBYTES as usize,
+            sys::blake2s_constant_BLAKE2S_SALTBYTES as usize,
+            sys::blake2s_constant_BLAKE2S_PERSONALBYTES as usize,
+        ];
+        assert_eq!(vendored, original);
+    }
 }
