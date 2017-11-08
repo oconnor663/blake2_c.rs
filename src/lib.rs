@@ -69,6 +69,14 @@ pub mod $name {
 
     /// A builder for `State` that lets you set all the various Blake2
     /// parameters.
+    ///
+    /// Apart from `digest_length`, all of these parameters are just associated
+    /// data for the hash. They help you guarantee that hashes used for
+    /// different applications will never collide. For all the details, see
+    /// [the Blake2 spec](https://blake2.net/blake2.pdf).
+    ///
+    /// Most of the builder methods will panic if their input is too large or
+    /// too small, as defined by the spec.
     #[derive(Clone)] // TODO: Debug
     pub struct Builder {
         params: $param_type,
@@ -77,6 +85,9 @@ pub mod $name {
     }
 
     impl Builder {
+        /// Create a new `Builder` with all the default paramters. For example,
+        /// `Builder::new().build()` would give the same state as
+        /// `State::new(OUTBYTES)`.
         pub fn new() -> Self {
             let mut params: $param_type = unsafe { mem::zeroed() };
             params.fanout = 1;
@@ -109,18 +120,22 @@ pub mod $name {
             state
         }
 
+        /// Set the length of the final hash. This is associated data too, so
+        /// changing the length will give a totally different hash. The maximum
+        /// digest length is `OUTBYTES`.
         pub fn digest_length(&mut self, length: usize) -> &mut Self {
-            if length == 0 || length > OUTBYTES {
+            if length == 0 || length > KEYBYTES {
                 panic!("Bad digest length: {}", length);
             }
             self.params.digest_length = length as u8;
             self
         }
 
-        /// An empty key is equivalent to having no key at all. Also note that
-        /// neither `Builder` nor `State` zeroes out their memory on drop, so
-        /// callers who worry about secret keys sticking around in memory need
-        /// to zero their own stacks. See for example the
+        /// Use a secret key, so that Blake2 acts as a MAC. The maximum key
+        /// length is `KEYBYTES`. An empty key is equivalent to having no key
+        /// at all. Also note that neither `Builder` nor `State` zeroes out
+        /// their memory on drop, so callers who worry about keys sticking
+        /// around in memory need to zero their own stacks. See for example the
         /// [`clear_on_drop`](https://crates.io/crates/clear_on_drop) crate.
         pub fn key(&mut self, key: &[u8]) -> &mut Self {
             if key.len() > KEYBYTES {
@@ -132,6 +147,8 @@ pub mod $name {
             self
         }
 
+        /// From 0 (meaning unlimited) to 255. The default is 1 (meaning
+        /// sequential).
         pub fn fanout(&mut self, fanout: usize) -> &mut Self {
             if fanout > 255 {
                 panic!("Bad fanout: {}", fanout);
@@ -140,6 +157,8 @@ pub mod $name {
             self
         }
 
+        /// From 1 (the default, meaning sequential) to 255 (meaning
+        /// unlimited).
         pub fn max_depth(&mut self, depth: usize) -> &mut Self {
             if depth == 0 || depth > 255 {
                 panic!("Bad max depth: {}", depth);
@@ -148,12 +167,15 @@ pub mod $name {
             self
         }
 
+        /// From 0 (the default, meaning unlimited or sequential) to `2^32 - 1`.
         pub fn max_leaf_length(&mut self, length: u32) -> &mut Self {
             // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
             self.params.leaf_length = length.to_le();
             self
         }
 
+        /// From 0 (the default, meaning first, leftmost, leaf, or sequential)
+        /// to `2^64 - 1` in Blake2b, or to `2^48 - 1` in Blake2s.
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
             if offset > $node_offset_max {
                 panic!("Bad node offset: {}", offset);
@@ -166,6 +188,7 @@ pub mod $name {
             self
         }
 
+        /// From 0 (the default, meaning leaf or sequential) to 255.
         pub fn node_depth(&mut self, depth: usize) -> &mut Self {
             if depth > 255 {
                 panic!("Bad node depth: {}", depth);
@@ -174,6 +197,7 @@ pub mod $name {
             self
         }
 
+        /// From 0 (the default, meaning sequential) to `OUTBYTES`.
         pub fn inner_hash_length(&mut self, length: usize) -> &mut Self {
             if length > OUTBYTES {
                 panic!("Bad inner hash length: {}", length);
@@ -182,6 +206,8 @@ pub mod $name {
             self
         }
 
+        /// At most `SALTBYTES` bytes. Shorter salts are padded with null
+        /// bytes. An empty salt is equivalent to having no salt at all.
         pub fn salt(&mut self, salt: &[u8]) -> &mut Self {
             if salt.len() > SALTBYTES {
                 panic!("Bad salt length: {}", salt.len());
@@ -191,6 +217,9 @@ pub mod $name {
             self
         }
 
+        /// At most `PERSONALBYTES` bytes. Shorter personalizations are padded
+        /// with null bytes. An empty personalization is equivalent to having
+        /// no personalization at all.
         pub fn personal(&mut self, personal: &[u8]) -> &mut Self {
             if personal.len() > PERSONALBYTES {
                 panic!("Bad personalization length: {}", personal.len());
@@ -200,6 +229,7 @@ pub mod $name {
             self
         }
 
+        /// Indicates the last node of a layer in tree-hashing modes.
         pub fn last_node(&mut self, last: bool) -> &mut Self {
             self.last_node = last;
             self
@@ -213,7 +243,7 @@ pub mod $name {
     impl State {
         /// Create a new hash state with the given digest length, and default
         /// values for all the other parameters. If you need to set other
-        /// Blake2 parameters, including keying, use a `Builder` instead.
+        /// Blake2 parameters, including keying, use the `Builder` instead.
         pub fn new(digest_length: usize) -> Self {
             if digest_length == 0 || digest_length > OUTBYTES {
                 panic!("Bad digest length: {}", digest_length);
@@ -258,16 +288,24 @@ pub mod $name {
         }
     }
 
-    /// A finalized Blake2 hash. Supports constant-time equality, for cases
-    /// where Blake2 is being used as a MAC. Althought digest lengths can vary
-    /// at runtime, this type uses a statically-allocated ArrayVec. It could
-    /// support `no_std`, though that's not yet implemented.
+    /// A finalized Blake2 hash.
+    ///
+    /// `Digest` supports constant-time equality checks, for cases where Blake2
+    /// is being used as a MAC. It uses an
+    /// [`ArrayVec`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayVec.html)
+    /// to hold various digest lengths without needing to allocate on the heap.
+    /// It could support `no_std`, though that's not yet implemented.
     #[derive(Clone, Debug)]
     pub struct Digest {
         pub bytes: ArrayVec<[u8; OUTBYTES]>,
     }
 
     impl Digest {
+        /// Convert the digest to a hexadecimal string. Because we know the
+        /// maximum length of the string in advance (`2 * OUTBYTES`), we can
+        /// use an
+        /// [`ArrayString`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayString.html)
+        /// to avoid allocating.
         pub fn hex(&self) -> ArrayString<[u8; 2 * OUTBYTES]> {
             use std::fmt::Write;
             let mut hexdigest = ArrayString::new();
@@ -278,6 +316,8 @@ pub mod $name {
         }
     }
 
+    /// This implementation is constant time, if the two digests are the same
+    /// length.
     impl PartialEq for Digest {
         fn eq(&self, other: &Digest) -> bool {
             constant_time_eq(&self.bytes, &other.bytes)
@@ -288,6 +328,7 @@ pub mod $name {
 }
 }} // end of blake2_impl!
 
+/// The most common version of Blake2, optimized for 64-bit processors.
 blake2_impl! {
     blake2b,
     sys::blake2b_constant::BLAKE2B_BLOCKBYTES,
@@ -305,6 +346,7 @@ blake2_impl! {
     u32,
 }
 
+/// The less common version of Blake2, optimized for smaller processors.
 blake2_impl! {
     blake2s,
     sys::blake2s_constant::BLAKE2S_BLOCKBYTES,
