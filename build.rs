@@ -7,8 +7,10 @@ fn main() {
         cc::Build::new()
             .file("./BLAKE2/sse/blake2b.c")
             .file("./BLAKE2/sse/blake2s.c")
-            // MSVC doens't seem to have an equivalent for -march=native.
+            // GCC and Clang
             .flag_if_supported("-march=native")
+            // MSVC
+            .flag_if_supported("/arch:AVX")
             .compile("blake2");
     } else {
         cc::Build::new()

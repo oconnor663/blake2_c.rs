@@ -30,3 +30,4 @@ build: false
 
 test_script:
   - cargo test -vv
+  - cargo test -vv --features=native
