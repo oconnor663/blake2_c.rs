@@ -32,12 +32,12 @@ test_script:
   - cargo build -vv
   - cargo build -vv --features=native
   - cargo test -vv
+  # The native GNU build works on AppVeyor, but actually running the tests
+  # exits immediately with no output. I suspect some kind of instruction
+  # set issue in their virtual environment. When I run things on my own
+  # physical Windows machine, it all works fine.
   - if not [%TARGET%]==[i686-pc-windows-gnu] (
       cargo test -vv --features=native
     ) else (
-      # The native GNU build works on AppVeyor, but actually running the tests
-      # exits immediately with no output. I suspect some kind of instruction
-      # set issue in their virtual environment. When I run things on my own
-      # physical Windows machine, it all works fine.
       echo SKIPPING --features=native test run on the GNU toolchain
     )
