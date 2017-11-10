@@ -56,7 +56,6 @@ macro_rules! blake2_impl {
         $personalbytes:expr,
         $param_type:path,
         $state_type:path,
-        $init_fn:path,
         $init_param_fn:path,
         $update_fn:path,
         $finalize_fn:path,
@@ -117,6 +116,8 @@ pub mod $name {
                 state = State(mem::zeroed());
                 $init_param_fn(&mut state.0, &self.params);
             }
+            // Assert that outlen gets set, since we rely on this later.
+            debug_assert_eq!(self.params.digest_length as usize, state.0.outlen);
             if self.last_node {
                 state.0.last_node = 1;
             }
@@ -262,12 +263,7 @@ pub mod $name {
             if digest_length == 0 || digest_length > OUTBYTES {
                 panic!("Bad digest length: {}", digest_length);
             }
-            let mut state;
-            unsafe {
-                state = State(mem::zeroed());
-                $init_fn(&mut state.0, digest_length);
-            }
-            state
+            Builder::new().digest_length(digest_length).build()
         }
 
         /// Write input to the hash. You can call `update` any number of times.
@@ -358,7 +354,6 @@ blake2_impl! {
     16,
     sys::blake2b_param,
     sys::blake2b_state,
-    sys::blake2b_init,
     sys::blake2b_init_param,
     sys::blake2b_update,
     sys::blake2b_final,
@@ -376,7 +371,6 @@ blake2_impl! {
     8,
     sys::blake2s_param,
     sys::blake2s_state,
-    sys::blake2s_init,
     sys::blake2s_init_param,
     sys::blake2s_update,
     sys::blake2s_final,
