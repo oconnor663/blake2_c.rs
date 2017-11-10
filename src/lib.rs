@@ -15,12 +15,15 @@
 //! - [Crate](https://crates.io/crates/blake2_c)
 //! - [Repo](https://github.com/oconnor663/blake2_c.rs)
 
+#![no_std]
+
 extern crate arrayvec;
 extern crate constant_time_eq;
+extern crate libc;
 
-use std::fmt;
-use std::mem;
-use std::os::raw::c_void;
+use core::fmt;
+use core::mem;
+use libc::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 
@@ -294,17 +297,6 @@ pub mod $name {
         }
     }
 
-    impl std::io::Write for State {
-        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            self.update(buf);
-            Ok(buf.len())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-
     /// A finalized Blake2 hash.
     ///
     /// `Digest` supports constant-time equality checks, for cases where Blake2
@@ -324,7 +316,7 @@ pub mod $name {
         /// [`ArrayString`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayString.html)
         /// to avoid allocating.
         pub fn hex(&self) -> ArrayString<[u8; 2 * OUTBYTES]> {
-            use std::fmt::Write;
+            use core::fmt::Write;
             let mut hexdigest = ArrayString::new();
             for &b in &self.bytes {
                 write!(&mut hexdigest, "{:02x}", b).expect("too many bytes");

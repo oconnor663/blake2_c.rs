@@ -64,7 +64,6 @@ fn test_foo_blake2s() {
 
 #[test]
 fn test_large_input_blake2b() {
-    let input = vec![0; 1_000_000];
     // Check several different digest lengths.
     let answers = &[
         "15",
@@ -78,10 +77,10 @@ fn test_large_input_blake2b() {
         "9ef8b51be521c6e33abb22d6a69363902b6d7eb67ca1364ebc87a64d5a36ec5e749e5c9e7029a85b0008e46cff24281e87500886818dbe79dc8e094f119bbeb8",
     ];
     for &answer in answers {
-        // While we're at it, test the std::io::Write interface.
-        use std::io::Write;
         let mut state = blake2b::State::new(answer.len() / 2);
-        state.write_all(&input).unwrap();
+        for _ in 0..1000 {
+            state.update(&[0; 1000]);
+        }
         let hash = state.finalize().hex();
         assert_eq!(answer, &*hash);
     }
@@ -89,7 +88,6 @@ fn test_large_input_blake2b() {
 
 #[test]
 fn test_large_input_blake2s() {
-    let input = vec![0; 1_000_000];
     // Check several different digest lengths.
     let answers = &[
         "e3",
@@ -102,10 +100,10 @@ fn test_large_input_blake2s() {
         "cc07784ef067dd3e05f2d0720933ef177846b9719b1e0741c607aca3ff7a38ae",
     ];
     for &answer in answers {
-        // While we're at it, test the std::io::Write interface.
-        use std::io::Write;
         let mut state = blake2s::State::new(answer.len() / 2);
-        state.write_all(&input).unwrap();
+        for _ in 0..1000 {
+            state.update(&[0; 1000]);
+        }
         let hash = state.finalize().hex();
         assert_eq!(answer, &*hash);
     }

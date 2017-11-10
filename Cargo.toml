@@ -14,6 +14,7 @@ native = []
 [dependencies]
 arrayvec = "0.4.5"
 constant_time_eq = "0.1.3"
+libc = "*"
 
 [build-dependencies]
 cc = "1.0.3"
