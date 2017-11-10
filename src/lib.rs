@@ -95,6 +95,7 @@ pub mod $name {
         /// `State::new(OUTBYTES)`.
         pub fn new() -> Self {
             let mut params: $param_type = unsafe { mem::zeroed() };
+            params.digest_length = OUTBYTES as u8;
             params.fanout = 1;
             params.depth = 1;
             Self {

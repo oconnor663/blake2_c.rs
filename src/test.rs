@@ -2,30 +2,34 @@ use super::*;
 
 #[test]
 fn test_empty_blake2b() {
-    let hash = blake2b::State::new(16).finalize().hex();
-    assert_eq!("cae66941d9efbd404e4d88758ea67670", &*hash);
+    let hash = blake2b::State::new(blake2b::OUTBYTES).finalize().hex();
+    assert_eq!(
+        "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce",
+        &*hash
+    );
 
     // Make sure the builder gives the same answer.
-    let hash2 = blake2b::Builder::new()
-        .digest_length(16)
-        .build()
-        .finalize()
-        .hex();
-    assert_eq!("cae66941d9efbd404e4d88758ea67670", &*hash2);
+    let hash2 = blake2b::Builder::new().build().finalize().hex();
+    assert_eq!(
+        "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce",
+        &*hash2
+    );
 }
 
 #[test]
 fn test_empty_blake2s() {
-    let hash = blake2s::State::new(16).finalize().hex();
-    assert_eq!("64550d6ffe2c0a01a14aba1eade0200c", &*hash);
+    let hash = blake2s::State::new(blake2s::OUTBYTES).finalize().hex();
+    assert_eq!(
+        "69217a3079908094e11121d042354a7c1f55b6482ca1a51e1b250dfd1ed0eef9",
+        &*hash
+    );
 
     // Make sure the builder gives the same answer.
-    let hash2 = blake2s::Builder::new()
-        .digest_length(16)
-        .build()
-        .finalize()
-        .hex();
-    assert_eq!("64550d6ffe2c0a01a14aba1eade0200c", &*hash2);
+    let hash2 = blake2s::Builder::new().build().finalize().hex();
+    assert_eq!(
+        "69217a3079908094e11121d042354a7c1f55b6482ca1a51e1b250dfd1ed0eef9",
+        &*hash2
+    );
 }
 
 #[test]
