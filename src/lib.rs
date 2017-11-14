@@ -66,10 +66,15 @@ macro_rules! blake2_impl {
 pub mod $name {
     use super::*;
 
+    /// The size of an input block, mostly an implementation detail.
     pub const BLOCKBYTES: usize = $blockbytes;
+    /// The maximum digest length.
     pub const OUTBYTES: usize = $outbytes;
+    /// The maximum secret key length.
     pub const KEYBYTES: usize = $keybytes;
+    /// The maximum salt length.
     pub const SALTBYTES: usize = $saltbytes;
+    /// The maximum personalization length.
     pub const PERSONALBYTES: usize = $personalbytes;
 
     /// A builder for `State` that lets you set all the various Blake2
