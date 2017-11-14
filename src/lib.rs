@@ -132,9 +132,7 @@ pub mod $name {
         /// changing the length will give a totally different hash. The maximum
         /// digest length is `OUTBYTES`.
         pub fn digest_length(&mut self, length: usize) -> &mut Self {
-            if length == 0 || length > KEYBYTES {
-                panic!("Bad digest length: {}", length);
-            }
+            assert!(1 <= length && length <= KEYBYTES, "Bad digest length: {}", length);
             self.params.digest_length = length as u8;
             self
         }
@@ -146,9 +144,7 @@ pub mod $name {
         /// around in memory need to zero their own stacks. See for example the
         /// [`clear_on_drop`](https://crates.io/crates/clear_on_drop) crate.
         pub fn key(&mut self, key: &[u8]) -> &mut Self {
-            if key.len() > KEYBYTES {
-                panic!("Bad key length: {}", key.len());
-            }
+            assert!(key.len() <= KEYBYTES, "Bad key length: {}", key.len());
             self.key_block = [0; BLOCKBYTES];
             self.key_block[..key.len()].copy_from_slice(key);
             self.params.key_length = key.len() as u8;
@@ -158,9 +154,7 @@ pub mod $name {
         /// From 0 (meaning unlimited) to 255. The default is 1 (meaning
         /// sequential).
         pub fn fanout(&mut self, fanout: usize) -> &mut Self {
-            if fanout > 255 {
-                panic!("Bad fanout: {}", fanout);
-            }
+            assert!(fanout <= 255, "Bad fanout: {}", fanout);
             self.params.fanout = fanout as u8;
             self
         }
@@ -168,9 +162,7 @@ pub mod $name {
         /// From 1 (the default, meaning sequential) to 255 (meaning
         /// unlimited).
         pub fn max_depth(&mut self, depth: usize) -> &mut Self {
-            if depth == 0 || depth > 255 {
-                panic!("Bad max depth: {}", depth);
-            }
+            assert!(1 <= depth && depth <= 255, "Bad max depth: {}", depth);
             self.params.depth = depth as u8;
             self
         }
@@ -185,9 +177,7 @@ pub mod $name {
         /// From 0 (the default, meaning first, leftmost, leaf, or sequential)
         /// to `2^64 - 1` in Blake2b, or to `2^48 - 1` in Blake2s.
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
-            if offset > $node_offset_max {
-                panic!("Bad node offset: {}", offset);
-            }
+            assert!(offset <= $node_offset_max, "Bad node offset: {}", offset);
             // The version of "blake2.h" we're using includes the xof_length
             // param from BLAKE2X, which occupies the high bits of node_offset.
             // NOTE: Tricky endianness issues, https://github.com/BLAKE2/libb2/issues/12.
@@ -198,18 +188,14 @@ pub mod $name {
 
         /// From 0 (the default, meaning leaf or sequential) to 255.
         pub fn node_depth(&mut self, depth: usize) -> &mut Self {
-            if depth > 255 {
-                panic!("Bad node depth: {}", depth);
-            }
+            assert!(depth <= 255, "Bad node depth: {}", depth);
             self.params.node_depth = depth as u8;
             self
         }
 
         /// From 0 (the default, meaning sequential) to `OUTBYTES`.
         pub fn inner_hash_length(&mut self, length: usize) -> &mut Self {
-            if length > OUTBYTES {
-                panic!("Bad inner hash length: {}", length);
-            }
+            assert!(length <= OUTBYTES, "Bad inner hash length: {}", length);
             self.params.inner_length = length as u8;
             self
         }
@@ -217,9 +203,7 @@ pub mod $name {
         /// At most `SALTBYTES` bytes. Shorter salts are padded with null
         /// bytes. An empty salt is equivalent to having no salt at all.
         pub fn salt(&mut self, salt: &[u8]) -> &mut Self {
-            if salt.len() > SALTBYTES {
-                panic!("Bad salt length: {}", salt.len());
-            }
+            assert!(salt.len() <= SALTBYTES, "Bad salt length: {}", salt.len());
             self.params.salt = [0; SALTBYTES];
             self.params.salt[..salt.len()].copy_from_slice(salt);
             self
@@ -229,9 +213,7 @@ pub mod $name {
         /// with null bytes. An empty personalization is equivalent to having
         /// no personalization at all.
         pub fn personal(&mut self, personal: &[u8]) -> &mut Self {
-            if personal.len() > PERSONALBYTES {
-                panic!("Bad personalization length: {}", personal.len());
-            }
+            assert!(personal.len() <= PERSONALBYTES, "Bad personalization length: {}", personal.len());
             self.params.personal = [0; PERSONALBYTES];
             self.params.personal[..personal.len()].copy_from_slice(personal);
             self
