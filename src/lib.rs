@@ -31,17 +31,17 @@ mod sys;
 mod test;
 
 /// An all-at-once convenience function for Blake2b-512.
-pub fn blake2b_512(input: &[u8]) -> blake2b::Digest {
+pub fn blake2b_512(input: &[u8]) -> Digest {
     blake2b::State::new(64).update(input).finalize()
 }
 
 /// An all-at-once convenience function for Blake2b-256.
-pub fn blake2b_256(input: &[u8]) -> blake2b::Digest {
+pub fn blake2b_256(input: &[u8]) -> Digest {
     blake2b::State::new(32).update(input).finalize()
 }
 
 /// An all-at-once convenience function for Blake2s-256.
-pub fn blake2s_256(input: &[u8]) -> blake2s::Digest {
+pub fn blake2s_256(input: &[u8]) -> Digest {
     blake2s::State::new(32).update(input).finalize()
 }
 
@@ -132,7 +132,7 @@ pub mod $name {
         /// changing the length will give a totally different hash. The maximum
         /// digest length is `OUTBYTES`.
         pub fn digest_length(&mut self, length: usize) -> &mut Self {
-            assert!(1 <= length && length <= KEYBYTES, "Bad digest length: {}", length);
+            assert!(1 <= length && length <= OUTBYTES, "Bad digest length: {}", length);
             self.params.digest_length = length as u8;
             self
         }
@@ -286,44 +286,6 @@ pub mod $name {
             Ok(())
         }
     }
-
-    /// A finalized Blake2 hash.
-    ///
-    /// `Digest` supports constant-time equality checks, for cases where Blake2
-    /// is being used as a MAC. It uses an
-    /// [`ArrayVec`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayVec.html)
-    /// to hold various digest lengths without needing to allocate on the heap.
-    /// It could support `no_std`, though that's not yet implemented.
-    #[derive(Clone, Debug)]
-    pub struct Digest {
-        pub bytes: ArrayVec<[u8; OUTBYTES]>,
-    }
-
-    impl Digest {
-        /// Convert the digest to a hexadecimal string. Because we know the
-        /// maximum length of the string in advance (`2 * OUTBYTES`), we can
-        /// use an
-        /// [`ArrayString`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayString.html)
-        /// to avoid allocating.
-        pub fn hex(&self) -> ArrayString<[u8; 2 * OUTBYTES]> {
-            use std::fmt::Write;
-            let mut hexdigest = ArrayString::new();
-            for &b in &self.bytes {
-                write!(&mut hexdigest, "{:02x}", b).expect("too many bytes");
-            }
-            hexdigest
-        }
-    }
-
-    /// This implementation is constant time, if the two digests are the same
-    /// length.
-    impl PartialEq for Digest {
-        fn eq(&self, other: &Digest) -> bool {
-            constant_time_eq(&self.bytes, &other.bytes)
-        }
-    }
-
-    impl Eq for Digest {}
 }
 }} // end of blake2_impl!
 
@@ -360,3 +322,41 @@ blake2_impl! {
     ((1 << 48) - 1),
     u16,
 }
+
+/// A finalized Blake2 hash.
+///
+/// `Digest` supports constant-time equality checks, for cases where Blake2 is
+/// being used as a MAC. It uses an
+/// [`ArrayVec`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayVec.html)
+/// to hold various digest lengths without needing to allocate on the heap. It
+/// could support `no_std`, though that's not yet implemented.
+#[derive(Clone, Debug)]
+pub struct Digest {
+    // blake2b::OUTBYTES is the largest possible digest length for either algorithm.
+    pub bytes: ArrayVec<[u8; blake2b::OUTBYTES]>,
+}
+
+impl Digest {
+    /// Convert the digest to a hexadecimal string. Because we know the maximum
+    /// length of the string in advance (`2 * OUTBYTES`), we can use an
+    /// [`ArrayString`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayString.html)
+    /// to avoid allocating.
+    pub fn hex(&self) -> ArrayString<[u8; 2 * blake2b::OUTBYTES]> {
+        use std::fmt::Write;
+        let mut hexdigest = ArrayString::new();
+        for &b in &self.bytes {
+            write!(&mut hexdigest, "{:02x}", b).expect("too many bytes");
+        }
+        hexdigest
+    }
+}
+
+/// This implementation is constant time, if the two digests are the same
+/// length.
+impl PartialEq for Digest {
+    fn eq(&self, other: &Digest) -> bool {
+        constant_time_eq(&self.bytes, &other.bytes)
+    }
+}
+
+impl Eq for Digest {}
