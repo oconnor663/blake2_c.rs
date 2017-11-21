@@ -225,3 +225,22 @@ fn test_finalize_twice_panics_blake2s() {
     state.finalize();
     state.finalize();
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn test_debug_repr() {
+    // Check that the debug output has a "<none>" string when there's no key,
+    // but not a "<redacted>" string.
+    let mut builder = blake2b::Builder::new();
+    assert!(format!("{:?}", builder).find("key=<none>").is_some());
+    assert!(format!("{:?}", builder).find("key=<redacted>").is_none());
+
+    // Check that the debug output has "<redacted>" after setting the key, and
+    // also that it doesn't have the key bytes anywhere.
+    builder.key(b"foo");
+    assert!(format!("{:?}", builder).find("key=<none>").is_none());
+    assert!(format!("{:?}", builder).find("key=<redacted>").is_some());
+    assert!(format!("{:?}", builder).find("foo").is_none());
+    assert!(format!("{:?}", builder).find("666f6f").is_none());
+    assert!(format!("{:?}", builder).find("102, 111, 111").is_none());
+}

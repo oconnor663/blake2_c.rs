@@ -256,7 +256,8 @@ pub mod $name {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "Builder {{ params: ")?;
             fmt::Debug::fmt(&self.params, f)?;
-            write!(f, ", last_node: {}, key=<redacted> }}", self.last_node)
+            let key_str = if self.params.key_length == 0 { "<none>" } else { "<redacted>" };
+            write!(f, ", last_node: {}, key={} }}", self.last_node, key_str)
         }
     }
 
