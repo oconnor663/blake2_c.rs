@@ -17,10 +17,11 @@
 
 extern crate arrayvec;
 extern crate constant_time_eq;
+extern crate cty;
 
 use std::fmt;
 use std::mem;
-use std::os::raw::c_void;
+use cty::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
 

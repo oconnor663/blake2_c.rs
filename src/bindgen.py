@@ -22,6 +22,7 @@ assert ref_header.open().read() == sse_header.open().read()
 # We can solve the first two with blacklisting and dynamically generating the
 # bindings, but not the third one. The only solution I know of right now is to
 # disable tests :(
-command = ["bindgen", str(ref_header), "--no-layout-tests"]
+command = ["bindgen", str(ref_header), "--no-layout-tests",
+           "--ctypes-prefix=::cty"]
 with (root / "src/sys.rs").open("w") as output:
     run(command, stdout=output, check=True)
