@@ -2,10 +2,18 @@
 //! BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
 //! that Blake2 supports, like personalization and tree hashing.
 //!
-//! By default it builds the `ref` implementation, but if you use
-//! `--features native` it will build the `sse` implementation. This gives
-//! about an 8% speedup on my machine, but the resulting binary is probably
-//! not portable.
+//! By default this crate links against the portable ["ref"
+//! implementation](https://github.com/BLAKE2/BLAKE2/tree/master/ref), but if
+//! you turn on the `native` feature it will link against the ["sse"
+//! implementation](https://github.com/BLAKE2/BLAKE2/tree/master/sse), which
+//! uses SIMD instructions if your processor supports them. That gives about an
+//! 8% speedup on my machine, but the resulting binary is probably not
+//! portable.
+//!
+//! This crate supports `no_std`. The `std` feature is on by default, to
+//! provide implementations of `std::io::Write`, but it can be [disabled in the
+//! caller's `Cargo.toml`](http://doc.crates.io/manifest.html#rules) using
+//! `default-features = false`.
 //!
 //! Originally based on [`libb2-sys`](https://github.com/cesarb/libb2-sys) by
 //! @cmr and @cesarb and [`blake2-rfc`](https://github.com/cesarb/blake2-rfc)
@@ -15,12 +23,18 @@
 //! - [Crate](https://crates.io/crates/blake2_c)
 //! - [Repo](https://github.com/oconnor663/blake2_c.rs)
 
+#![no_std]
+
+#[cfg(feature = "std")]
+#[macro_use]
+extern crate std;
+
 extern crate arrayvec;
 extern crate constant_time_eq;
 extern crate cty;
 
-use std::fmt;
-use std::mem;
+use core::fmt;
+use core::mem;
 use cty::c_void;
 use arrayvec::{ArrayVec, ArrayString};
 use constant_time_eq::constant_time_eq;
@@ -294,6 +308,7 @@ pub mod $name {
         }
     }
 
+    #[cfg(feature = "std")]
     impl std::io::Write for State {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
             self.update(buf);
@@ -360,7 +375,7 @@ impl Digest {
     /// [`ArrayString`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayString.html)
     /// to avoid allocating.
     pub fn hex(&self) -> ArrayString<[u8; 2 * blake2b::OUTBYTES]> {
-        use std::fmt::Write;
+        use core::fmt::Write;
         let mut hexdigest = ArrayString::new();
         for &b in &self.bytes {
             write!(&mut hexdigest, "{:02x}", b).expect("too many bytes");

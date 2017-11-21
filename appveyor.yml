@@ -29,15 +29,18 @@ install:
 build: false
 
 test_script:
-  - cargo build -vv
-  - cargo build -vv --features=native
+  # With std.
   - cargo test -vv
-  # The native GNU build works on AppVeyor, but actually running the tests
-  # exits immediately with no output. I suspect some kind of instruction
-  # set issue in their virtual environment. When I run things on my own
-  # physical Windows machine, it all works fine.
+  # Without std.
+  - cargo test -vv --no-default-features
+  # With std, and linking against the "sse" implementation. The native GNU
+  # build works on AppVeyor, but actually running the tests exits immediately
+  # with no output. I suspect some kind of instruction set issue in their
+  # virtual environment. When I run things on my own physical Windows machine,
+  # it all works fine.
+  - cargo build -vv --all-features
   - if not [%TARGET%]==[i686-pc-windows-gnu] (
-      cargo test -vv --features=native
+      cargo test -vv --all-features
     ) else (
       echo SKIPPING --features=native test run on the GNU toolchain
     )

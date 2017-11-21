@@ -62,6 +62,7 @@ fn test_foo_blake2s() {
     assert_eq!("4447d20921efe4103c56a695dcaafa38", &*hash2);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn test_large_input_blake2b() {
     let input = vec![0; 1_000_000];
@@ -87,6 +88,7 @@ fn test_large_input_blake2b() {
     }
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn test_large_input_blake2s() {
     let input = vec![0; 1_000_000];

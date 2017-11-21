@@ -6,8 +6,10 @@ rust:
   - stable
   - beta
   - nightly
-env:
-  - FEATURES=
-  - FEATURES=native
 script:
-  - cargo test -vv --features "$FEATURES"
+  # With std.
+  - cargo test -vv
+  # Without std.
+  - cargo test -vv --no-default-features
+  # With std, and linking against the "sse" implementation.
+  - cargo test -vv --all-features
