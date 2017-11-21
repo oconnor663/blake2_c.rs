@@ -99,6 +99,9 @@ pub mod $name {
         /// `Builder::new().build()` would give the same state as
         /// `State::new(OUTBYTES)`.
         pub fn new() -> Self {
+            // Zeroing the params helps us avoid dealing with the `reserved`
+            // field difference between 32-bit and 64-bit, and it's safe
+            // because the struct is plain old data.
             let mut params: $param_type = unsafe { mem::zeroed() };
             params.digest_length = OUTBYTES as u8;
             params.fanout = 1;
@@ -118,10 +121,13 @@ pub mod $name {
         /// `Builder`.
         pub fn build(&self) -> State {
             let mut state;
-            unsafe {
+            let ret = unsafe {
                 state = State(mem::zeroed());
-                $init_param_fn(&mut state.0, &self.params);
-            }
+                $init_param_fn(&mut state.0, &self.params)
+            };
+            // Errors from init should be impossible in the current C
+            // implementation, but we check them in case that changes.
+            assert_eq!(ret, 0, "Blake2 init returned an error");
             // Assert that outlen gets set, since we rely on this later.
             debug_assert_eq!(self.params.digest_length as usize, state.0.outlen);
             if self.last_node {
@@ -256,21 +262,27 @@ pub mod $name {
 
         /// Write input to the hash. You can call `update` any number of times.
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
-            unsafe {
-                $update_fn(&mut self.0, input.as_ptr() as *const c_void, input.len());
-            }
+            // Errors from update should be impossible in the current C
+            // implementation, but we check them in case that changes.
+            let ret = unsafe {
+                $update_fn(&mut self.0, input.as_ptr() as *const c_void, input.len())
+            };
+            assert_eq!(ret, 0, "Blake2 update returned an error");
             self
         }
 
         /// Return the final hash. `finalize` takes `&mut self` so that you can
         /// chain method calls together easily, but calling it more than once
-        /// on the same state will give you a garbage result.
+        /// on the same state will panic.
         pub fn finalize(&mut self) -> Digest {
             let mut bytes = ArrayVec::new();
-            unsafe {
+            let ret = unsafe {
                 bytes.set_len(self.0.outlen);
-                $finalize_fn(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len());
-            }
+                $finalize_fn(&mut self.0, bytes.as_mut_ptr() as *mut c_void, bytes.len())
+            };
+            // The current C implementation sets a finalize flag, and calling
+            // finalize a second time is an error.
+            assert_eq!(ret, 0, "Blake2 finalize returned an error");
             Digest { bytes }
         }
     }

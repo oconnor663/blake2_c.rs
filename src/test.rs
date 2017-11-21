@@ -207,3 +207,19 @@ fn test_constants_match() {
     ];
     assert_eq!(vendored, original);
 }
+
+#[test]
+fn test_finalize_twice_panics_blake2b() {
+    let mut state = blake2b::State::new(32);
+    state.finalize();
+    let result = std::panic::catch_unwind(move || state.finalize());
+    assert!(result.is_err(), "second finalize should've panicked");
+}
+
+#[test]
+fn test_finalize_twice_panics_blake2s() {
+    let mut state = blake2s::State::new(32);
+    state.finalize();
+    let result = std::panic::catch_unwind(move || state.finalize());
+    assert!(result.is_err(), "second finalize should've panicked");
+}
