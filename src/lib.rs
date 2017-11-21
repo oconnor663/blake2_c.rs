@@ -361,8 +361,7 @@ blake2_impl! {
 /// `Digest` supports constant-time equality checks, for cases where Blake2 is
 /// being used as a MAC. It uses an
 /// [`ArrayVec`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayVec.html)
-/// to hold various digest lengths without needing to allocate on the heap. It
-/// could support `no_std`, though that's not yet implemented.
+/// to hold various digest lengths without needing to allocate on the heap.
 #[derive(Clone, Debug)]
 pub struct Digest {
     // blake2b::OUTBYTES is the largest possible digest length for either algorithm.
