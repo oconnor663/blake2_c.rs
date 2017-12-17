@@ -106,7 +106,6 @@ pub mod $name {
     pub struct Builder {
         params: $param_type,
         key_block: [u8; BLOCKBYTES as usize],
-        last_node: bool,
     }
 
     impl Builder {
@@ -128,7 +127,6 @@ pub mod $name {
                 // drop wouldn't clear old bytes after a move. Callers who care
                 // about this might want to look at clear_on_drop::clear_stack.
                 key_block: [0; BLOCKBYTES],
-                last_node: false,
             }
         }
 
@@ -145,9 +143,6 @@ pub mod $name {
             assert_eq!(ret, 0, "Blake2 init returned an error");
             // Assert that outlen gets set, since we rely on this later.
             debug_assert_eq!(self.params.digest_length as usize, state.0.outlen);
-            if self.last_node {
-                state.0.last_node = 1;
-            }
             if self.params.key_length > 0 {
                 state.update(&self.key_block);
             }
@@ -244,12 +239,6 @@ pub mod $name {
             self.params.personal[..personal.len()].copy_from_slice(personal);
             self
         }
-
-        /// Indicates the last node of a layer in tree-hashing modes.
-        pub fn last_node(&mut self, last: bool) -> &mut Self {
-            self.last_node = last;
-            self
-        }
     }
 
     impl fmt::Debug for Builder {
@@ -257,7 +246,7 @@ pub mod $name {
             write!(f, "Builder {{ params: ")?;
             fmt::Debug::fmt(&self.params, f)?;
             let key_str = if self.params.key_length == 0 { "<none>" } else { "<redacted>" };
-            write!(f, ", last_node: {}, key={} }}", self.last_node, key_str)
+            write!(f, ", key={} }}", key_str)
         }
     }
 
@@ -300,6 +289,22 @@ pub mod $name {
             // finalize a second time is an error.
             assert_eq!(ret, 0, "Blake2 finalize returned an error");
             Digest { bytes }
+        }
+
+        /// Indicate the last node in a layer, when tree hashing.
+        ///
+        /// As with the other tree parameters on the `Builder`, this is
+        /// associated data for the hash. It's also used in the parallel
+        /// hashing modes, BLAKE2bp and BLAKE2sp. See [the Blake2
+        /// spec](https://blake2.net/blake2.pdf) for details.
+        ///
+        /// This function is defined on the `State` instead of on the
+        /// `Builder`, because if the caller doesn't know the length of the
+        /// input in advance, then they might not know that a given node is
+        /// last until after some input has already been fed into the `State`.
+        pub fn set_last_node(&mut self, val: bool) -> &mut Self {
+            self.0.last_node = val as u8;
+            self
         }
     }
 

@@ -126,8 +126,8 @@ fn test_all_parameters_blake2b() {
         .node_offset(0x08090a0b0c0d0e0f)
         .node_depth(16)
         .inner_hash_length(17)
-        .last_node(true)
         .build()
+        .set_last_node(true)
         .update(b"foo")
         .finalize()
         .hex();
@@ -147,8 +147,8 @@ fn test_all_parameters_blake2s() {
         .node_offset(0x08090a0b0c0d)
         .node_depth(16)
         .inner_hash_length(17)
-        .last_node(true)
         .build()
+        .set_last_node(true)
         .update(b"foo")
         .finalize()
         .hex();
