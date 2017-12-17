@@ -18,6 +18,27 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// from AVX2
+#if !defined(__cplusplus) &&                                                   \
+    (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
+#if defined(_MSC_VER)
+#define INLINE __inline
+#elif defined(__GNUC__)
+#define INLINE __inline__
+#else
+#define INLINE
+#endif
+#else
+#define INLINE inline
+#endif
+
+// from AVX2
+#if defined(_MSC_VER)
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+
 #if defined(_MSC_VER)
 #define BLAKE2_PACKED(x) __pragma(pack(push, 1)) x __pragma(pack(pop))
 #else
