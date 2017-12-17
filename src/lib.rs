@@ -56,6 +56,7 @@ pub fn blake2b_256(input: &[u8]) -> Digest {
 }
 
 /// An all-at-once convenience function for Blake2s-256.
+#[cfg(not(feature = "avx2"))]
 pub fn blake2s_256(input: &[u8]) -> Digest {
     blake2s::State::new(32).update(input).finalize()
 }
@@ -340,6 +341,7 @@ blake2_impl! {
     u32,
 }
 
+#[cfg(not(feature = "avx2"))]
 blake2_impl! {
     blake2s,
     doc="The less common version of Blake2, optimized for smaller processors.",

@@ -16,6 +16,7 @@ fn test_empty_blake2b() {
     );
 }
 
+#[cfg(not(feature = "avx2"))]
 #[test]
 fn test_empty_blake2s() {
     let hash = blake2s::State::new(blake2s::OUTBYTES).finalize().hex();
@@ -47,6 +48,7 @@ fn test_foo_blake2b() {
     assert_eq!("04136e24f85d470465c3db66e58ed56c", &*hash2);
 }
 
+#[cfg(not(feature = "avx2"))]
 #[test]
 fn test_foo_blake2s() {
     let hash = blake2s::State::new(16).update(b"foo").finalize().hex();
@@ -88,6 +90,7 @@ fn test_large_input_blake2b() {
     }
 }
 
+#[cfg(not(feature = "avx2"))]
 #[cfg(feature = "std")]
 #[test]
 fn test_large_input_blake2s() {
@@ -134,6 +137,7 @@ fn test_all_parameters_blake2b() {
     assert_eq!("0dea28da297ebeb1abb7fdd4c573887349", &*hash);
 }
 
+#[cfg(not(feature = "avx2"))]
 #[test]
 fn test_all_parameters_blake2s() {
     let hash = blake2s::Builder::new()
@@ -156,7 +160,7 @@ fn test_all_parameters_blake2s() {
 }
 
 #[test]
-fn test_one_off_functions() {
+fn test_one_off_functions_blake2b() {
     assert_eq!(
         &*blake2b_512(b"abc").hex(),
         "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923"
@@ -165,6 +169,11 @@ fn test_one_off_functions() {
         &*blake2b_256(b"abc").hex(),
         "bddd813c634239723171ef3fee98579b94964e3bb1cb3e427262c8c068d52319"
     );
+}
+
+#[cfg(not(feature = "avx2"))]
+#[test]
+fn test_one_off_functions_blake2s() {
     assert_eq!(
         &*blake2s_256(b"abc").hex(),
         "508c5e8c327c14e2e1a72ba34eeb452f37458b209ed63a294d999b4c86675982"
@@ -172,14 +181,20 @@ fn test_one_off_functions() {
 }
 
 #[test]
-fn test_param_struct_size() {
+fn test_param_struct_size_blake2b() {
     // These are part of the spec: https://blake2.net/blake2.pdf.
     assert_eq!(64, mem::size_of::<sys::blake2b_param>());
+}
+
+#[cfg(not(feature = "avx2"))]
+#[test]
+fn test_param_struct_size_blake2s() {
+    // These are part of the spec: https://blake2.net/blake2.pdf.
     assert_eq!(32, mem::size_of::<sys::blake2s_param>());
 }
 
 #[test]
-fn test_constants_match() {
+fn test_constants_match_blake2b() {
     // We copy the constant by value, so that they show up clearly in the
     // docs instead of being opaque references. Make sure their values still
     // match.
@@ -189,11 +204,6 @@ fn test_constants_match() {
         blake2b::KEYBYTES,
         blake2b::SALTBYTES,
         blake2b::PERSONALBYTES,
-        blake2s::BLOCKBYTES,
-        blake2s::OUTBYTES,
-        blake2s::KEYBYTES,
-        blake2s::SALTBYTES,
-        blake2s::PERSONALBYTES,
     ];
     let original = &[
         sys::blake2b_constant_BLAKE2B_BLOCKBYTES as usize,
@@ -201,6 +211,24 @@ fn test_constants_match() {
         sys::blake2b_constant_BLAKE2B_KEYBYTES as usize,
         sys::blake2b_constant_BLAKE2B_SALTBYTES as usize,
         sys::blake2b_constant_BLAKE2B_PERSONALBYTES as usize,
+    ];
+    assert_eq!(vendored, original);
+}
+
+#[cfg(not(feature = "avx2"))]
+#[test]
+fn test_constants_match_blake2s() {
+    // We copy the constant by value, so that they show up clearly in the
+    // docs instead of being opaque references. Make sure their values still
+    // match.
+    let vendored = &[
+        blake2s::BLOCKBYTES,
+        blake2s::OUTBYTES,
+        blake2s::KEYBYTES,
+        blake2s::SALTBYTES,
+        blake2s::PERSONALBYTES,
+    ];
+    let original = &[
         sys::blake2s_constant_BLAKE2S_BLOCKBYTES as usize,
         sys::blake2s_constant_BLAKE2S_OUTBYTES as usize,
         sys::blake2s_constant_BLAKE2S_KEYBYTES as usize,
@@ -218,6 +246,7 @@ fn test_finalize_twice_panics_blake2b() {
     state.finalize();
 }
 
+#[cfg(not(feature = "avx2"))]
 #[test]
 #[should_panic]
 fn test_finalize_twice_panics_blake2s() {
