@@ -10,6 +10,7 @@ fn main() {
             .flag_if_supported("-march=native")
             // MSVC
             .flag_if_supported("/arch:AVX2")
+            .define("PERMUTE_WITH_GATHER", None)
             .compile("blake2");
     } else if env::var_os("CARGO_FEATURE_NATIVE").is_some() {
         cc::Build::new()
