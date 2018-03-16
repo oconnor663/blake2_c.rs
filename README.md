@@ -21,6 +21,6 @@ Originally based on [`libb2-sys`](https://github.com/cesarb/libb2-sys) by
 @cmr and @cesarb and [`blake2-rfc`](https://github.com/cesarb/blake2-rfc)
 by @cesarb.
 
-- [Docs](https://jacko.io/rustdoc/blake2_c)
+- [Docs](https://docs.rs/blake2_c)
 - [Crate](https://crates.io/crates/blake2_c)
 - [Repo](https://github.com/oconnor663/blake2_c.rs)
