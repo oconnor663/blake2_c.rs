@@ -1,6 +1,5 @@
 /// This is a trivial copy of the b2sum command line utility, mainly for
 /// benchmarking.
-
 extern crate blake2_c;
 
 use std::io::stdin;

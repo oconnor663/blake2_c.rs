@@ -1,6 +1,6 @@
 //! `blake2_c` is a safe Rust wrapper around the [C implementation of
 //! BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
-//! that Blake2 supports, like personalization and tree hashing.
+//! that BLAKE2 supports, like personalization and tree hashing.
 //!
 //! By default this crate links against the portable ["ref"
 //! implementation](https://github.com/BLAKE2/BLAKE2/tree/master/ref), but if
@@ -45,17 +45,17 @@ mod sys;
 #[cfg(test)]
 mod test;
 
-/// An all-at-once convenience function for Blake2b-512.
+/// An all-at-once convenience function for BLAKE2b-512.
 pub fn blake2b_512(input: &[u8]) -> Digest {
     blake2b::State::new(64).update(input).finalize()
 }
 
-/// An all-at-once convenience function for Blake2b-256.
+/// An all-at-once convenience function for BLAKE2b-256.
 pub fn blake2b_256(input: &[u8]) -> Digest {
     blake2b::State::new(32).update(input).finalize()
 }
 
-/// An all-at-once convenience function for Blake2s-256.
+/// An all-at-once convenience function for BLAKE2s-256.
 pub fn blake2s_256(input: &[u8]) -> Digest {
     blake2s::State::new(32).update(input).finalize()
 }
@@ -92,13 +92,13 @@ pub mod $name {
     /// The maximum personalization length.
     pub const PERSONALBYTES: usize = $personalbytes;
 
-    /// A builder for `State` that lets you set all the various Blake2
+    /// A builder for `State` that lets you set all the various BLAKE2
     /// parameters.
     ///
     /// Apart from `digest_length`, all of these parameters are just associated
     /// data for the hash. They help you guarantee that hashes used for
     /// different applications will never collide. For all the details, see
-    /// [the Blake2 spec](https://blake2.net/blake2.pdf).
+    /// [the BLAKE2 spec](https://blake2.net/blake2.pdf).
     ///
     /// Most of the builder methods will panic if their input is too large or
     /// too small, as defined by the spec.
@@ -140,7 +140,7 @@ pub mod $name {
             };
             // Errors from init should be impossible in the current C
             // implementation, but we check them in case that changes.
-            assert_eq!(ret, 0, "Blake2 init returned an error");
+            assert_eq!(ret, 0, "BLAKE2 init returned an error");
             // Assert that outlen gets set, since we rely on this later.
             debug_assert_eq!(self.params.digest_length as usize, state.0.outlen);
             if self.params.key_length > 0 {
@@ -158,7 +158,7 @@ pub mod $name {
             self
         }
 
-        /// Use a secret key, so that Blake2 acts as a MAC. The maximum key
+        /// Use a secret key, so that BLAKE2 acts as a MAC. The maximum key
         /// length is `KEYBYTES`. An empty key is equivalent to having no key
         /// at all. Also note that neither `Builder` nor `State` zeroes out
         /// their memory on drop, so callers who worry about keys sticking
@@ -196,7 +196,7 @@ pub mod $name {
         }
 
         /// From 0 (the default, meaning first, leftmost, leaf, or sequential)
-        /// to `2^64 - 1` in Blake2b, or to `2^48 - 1` in Blake2s.
+        /// to `2^64 - 1` in BLAKE2b, or to `2^48 - 1` in BLAKE2s.
         pub fn node_offset(&mut self, offset: u64) -> &mut Self {
             assert!(offset <= $node_offset_max, "Bad node offset: {}", offset);
             // The version of "blake2.h" we're using includes the xof_length
@@ -250,14 +250,14 @@ pub mod $name {
         }
     }
 
-    /// Computes a Blake2 hash incrementally.
+    /// Computes a BLAKE2 hash incrementally.
     #[derive(Clone)]
     pub struct State($state_type);
 
     impl State {
         /// Create a new hash state with the given digest length, and default
         /// values for all the other parameters. If you need to set other
-        /// Blake2 parameters, including keying, use the `Builder` instead.
+        /// BLAKE2 parameters, including keying, use the `Builder` instead.
         pub fn new(digest_length: usize) -> Self {
             if digest_length == 0 || digest_length > OUTBYTES {
                 panic!("Bad digest length: {}", digest_length);
@@ -274,7 +274,7 @@ pub mod $name {
             let ret = unsafe {
                 $update_fn(&mut self.0, input.as_ptr() as *const c_void, input.len())
             };
-            assert_eq!(ret, 0, "Blake2 update returned an error");
+            assert_eq!(ret, 0, "BLAKE2 update returned an error");
             self
         }
 
@@ -289,7 +289,7 @@ pub mod $name {
             };
             // The current C implementation sets a finalize flag, and calling
             // finalize a second time is an error.
-            assert_eq!(ret, 0, "Blake2 finalize returned an error");
+            assert_eq!(ret, 0, "BLAKE2 finalize returned an error");
             Digest { bytes }
         }
 
@@ -297,7 +297,7 @@ pub mod $name {
         ///
         /// As with the other tree parameters on the `Builder`, this is
         /// associated data for the hash. It's also used in the parallel
-        /// hashing modes, BLAKE2bp and BLAKE2sp. See [the Blake2
+        /// hashing modes, BLAKE2bp and BLAKE2sp. See [the BLAKE2
         /// spec](https://blake2.net/blake2.pdf) for details.
         ///
         /// This function is defined on the `State` instead of on the
@@ -332,7 +332,7 @@ pub mod $name {
 
 blake2_impl! {
     blake2b,
-    doc="The more common version of Blake2, optimized for 64-bit processors.",
+    doc="The more common version of BLAKE2, optimized for 64-bit processors.",
     128,
     64,
     64,
@@ -349,7 +349,7 @@ blake2_impl! {
 
 blake2_impl! {
     blake2s,
-    doc="The less common version of Blake2, optimized for smaller processors.",
+    doc="The less common version of BLAKE2, optimized for smaller processors.",
     64,
     32,
     32,
@@ -364,9 +364,9 @@ blake2_impl! {
     u16,
 }
 
-/// A finalized Blake2 hash.
+/// A finalized BLAKE2 hash.
 ///
-/// `Digest` supports constant-time equality checks, for cases where Blake2 is
+/// `Digest` supports constant-time equality checks, for cases where BLAKE2 is
 /// being used as a MAC. It uses an
 /// [`ArrayVec`](https://docs.rs/arrayvec/0.4.6/arrayvec/struct.ArrayVec.html)
 /// to hold various digest lengths without needing to allocate on the heap.

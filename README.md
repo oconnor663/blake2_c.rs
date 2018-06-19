@@ -2,7 +2,7 @@
 
 `blake2_c` is a safe Rust wrapper around the [C implementation of
 BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
-that Blake2 supports, like personalization and tree hashing.
+that BLAKE2 supports, like personalization and tree hashing.
 
 By default this crate links against the portable ["ref"
 implementation](https://github.com/BLAKE2/BLAKE2/tree/master/ref), but if
