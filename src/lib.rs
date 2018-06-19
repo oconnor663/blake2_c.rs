@@ -266,6 +266,8 @@ pub mod $name {
         }
 
         /// Write input to the hash. You can call `update` any number of times.
+        /// Note that when the `std` feature is enabled (by default), `State`
+        /// also implements `std::io::Write`.
         pub fn update(&mut self, input: &[u8]) -> &mut Self {
             // Errors from update should be impossible in the current C
             // implementation, but we check them in case that changes.
