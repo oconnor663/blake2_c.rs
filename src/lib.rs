@@ -33,11 +33,11 @@ extern crate arrayvec;
 extern crate constant_time_eq;
 extern crate cty;
 
+use arrayvec::{ArrayString, ArrayVec};
+use constant_time_eq::constant_time_eq;
 use core::fmt;
 use core::mem;
 use cty::c_void;
-use arrayvec::{ArrayVec, ArrayString};
-use constant_time_eq::constant_time_eq;
 
 #[allow(warnings)]
 mod sys;

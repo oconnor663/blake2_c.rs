@@ -2,8 +2,8 @@
 /// benchmarking.
 extern crate blake2_c;
 
-use std::io::stdin;
 use std::io::prelude::*;
+use std::io::stdin;
 
 fn main() {
     let stdin = stdin();
