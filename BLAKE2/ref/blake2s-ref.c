@@ -169,7 +169,7 @@ int blake2s_init_key( blake2s_state *S, size_t outlen, const void *key, size_t k
     G(r,7,v[ 3],v[ 4],v[ 9],v[14]); \
   } while(0)
 
-static void blake2s_compress( blake2s_state *S, const uint8_t in[BLAKE2S_BLOCKBYTES] )
+void blake2s_compress( blake2s_state *S, const uint8_t in[BLAKE2S_BLOCKBYTES] )
 {
   uint32_t m[16];
   uint32_t v[16];

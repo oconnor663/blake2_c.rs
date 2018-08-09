@@ -37,7 +37,7 @@ use arrayvec::{ArrayString, ArrayVec};
 use constant_time_eq::constant_time_eq;
 use core::fmt;
 use core::mem;
-use cty::c_void;
+use cty::{c_void, uint8_t};
 
 #[allow(warnings)]
 mod sys;
@@ -74,7 +74,9 @@ macro_rules! blake2_impl {
         $init_param_fn:path,
         $update_fn:path,
         $finalize_fn:path,
+        $compress_fn:path,
         $node_offset_max:expr,
+        $counter_type:ty,
         $xof_length_type:ty,
     } => {
 #[$moddoc]
@@ -308,6 +310,17 @@ pub mod $name {
             self.0.last_node = val as u8;
             self
         }
+
+        pub fn compress(&mut self, block: &[u8; BLOCKBYTES]) {
+            unsafe {
+                // This is only for benchmarking. Just assume that:
+                // 1) The buffer is empty.
+                // 2) The counter isn't going to overflow.
+                // 3) More bytes are coming.
+                self.0.t[0] += BLOCKBYTES as $counter_type;
+                $compress_fn(&mut self.0, block.as_ptr() as *const uint8_t);
+            }
+        }
     }
 
     impl fmt::Debug for State {
@@ -343,7 +356,9 @@ blake2_impl! {
     sys::blake2b_init_param,
     sys::blake2b_update,
     sys::blake2b_final,
+    sys::blake2b_compress,
     u64::max_value(),
+    u64,
     u32,
 }
 
@@ -360,7 +375,9 @@ blake2_impl! {
     sys::blake2s_init_param,
     sys::blake2s_update,
     sys::blake2s_final,
+    sys::blake2s_compress,
     ((1 << 48) - 1),
+    u32,
     u16,
 }
 

@@ -148,7 +148,7 @@ int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t k
   return 0;
 }
 
-static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] )
+void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] )
 {
   __m128i row1l, row1h;
   __m128i row2l, row2h;

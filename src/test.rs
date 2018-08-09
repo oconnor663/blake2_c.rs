@@ -244,3 +244,23 @@ fn test_debug_repr() {
     assert!(format!("{:?}", builder).find("666f6f").is_none());
     assert!(format!("{:?}", builder).find("102, 111, 111").is_none());
 }
+
+#[test]
+fn test_compress_blake2b() {
+    let expected = blake2b_256(&[0; blake2b::BLOCKBYTES + 1]);
+    let mut state = blake2b::State::new(32);
+    state.compress(&[0; blake2b::BLOCKBYTES]);
+    state.update(&[0]);
+    let found = state.finalize();
+    assert_eq!(expected, found);
+}
+
+#[test]
+fn test_compress_blake2s() {
+    let expected = blake2s_256(&[0; blake2s::BLOCKBYTES + 1]);
+    let mut state = blake2s::State::new(32);
+    state.compress(&[0; blake2s::BLOCKBYTES]);
+    state.update(&[0]);
+    let found = state.finalize();
+    assert_eq!(expected, found);
+}

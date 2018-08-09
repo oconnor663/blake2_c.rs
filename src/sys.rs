@@ -325,6 +325,12 @@ extern "C" {
     ) -> ::cty::c_int;
 }
 extern "C" {
+    pub fn blake2b_compress(S: *mut blake2b_state, block: *const ::cty::uint8_t);
+}
+extern "C" {
+    pub fn blake2s_compress(S: *mut blake2s_state, block: *const ::cty::uint8_t);
+}
+extern "C" {
     pub fn blake2b_final(
         S: *mut blake2b_state,
         out: *mut ::cty::c_void,
