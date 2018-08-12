@@ -1,3 +1,7 @@
+//! **Deprecation:** The [`blake2b_simd`](https://github.com/oconnor663/blake2b_simd)
+//! crate has better performance than this one, with the added benefit of being
+//! pure Rust. This library probably won't be developed any further.
+//!
 //! `blake2_c` is a safe Rust wrapper around the [C implementation of
 //! BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
 //! that BLAKE2 supports, like personalization and tree hashing.

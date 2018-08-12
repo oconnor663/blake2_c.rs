@@ -1,5 +1,9 @@
 # blake2_c.rs [![Travis build](https://travis-ci.org/oconnor663/blake2_c.rs.svg?branch=master)](https://travis-ci.org/oconnor663/blake2_c.rs) [![AppVeyor build](https://ci.appveyor.com/api/projects/status/9g5e5ji73197so2e/branch/master?svg=true)](https://ci.appveyor.com/project/oconnor663/blake2-c-rs/branch/master) [![crates.io](https://img.shields.io/crates/v/blake2_c.svg)](https://crates.io/crates/blake2_c) [![docs.rs](https://docs.rs/blake2_c/badge.svg)](https://docs.rs/blake2_c)
 
+**Deprecation:** The [`blake2b_simd`](https://github.com/oconnor663/blake2b_simd)
+crate has better performance than this one, with the added benefit of being
+pure Rust. This library probably won't be developed any further.
+
 `blake2_c` is a safe Rust wrapper around the [C implementation of
 BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
 that BLAKE2 supports, like personalization and tree hashing.
