@@ -7,6 +7,8 @@ repository = "https://github.com/oconnor663/blake2_c.rs"
 documentation = "https://docs.rs/blake2_c"
 license = "MIT"
 build = "build.rs"
+
+[badges]
 maintenance = { status = "deprecated" }
 
 [features]
