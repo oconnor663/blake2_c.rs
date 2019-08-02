@@ -1,8 +1,7 @@
-//! **Deprecation:** The [`blake2b_simd`](https://github.com/oconnor663/blake2b_simd)
-//! crate has better performance than this one, with the added benefit of being
-//! pure Rust. This library probably won't be developed any further.
-//! `blake2b_simd` doesn't currently support BLAKE2s, but if there are any
-//! callers that need it I can add support or fork the crate, so let me know.
+//! **Deprecation:** The [`blake2b_simd`](https://crates.io/crates/blake2b_simd)
+//! and [`blake2s_simd`](https://crates.io/crates/blake2s_simd) crates have
+//! better performance than this one, with the added benefit of being pure
+//! Rust. This library is deprecated.
 //!
 //! `blake2_c` is a safe Rust wrapper around the [C implementation of
 //! BLAKE2](https://github.com/BLAKE2/BLAKE2). It exposes all the parameters
